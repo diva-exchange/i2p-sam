@@ -1,0 +1,17 @@
+{
+  "extends": "@tsconfig/node14/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2018",
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "downlevelIteration": true,
+    "emitDecoratorMetadata": false,
+    "outDir": "dist",
+    "preserveConstEnums": true,
+    "removeComments": true,
+    "sourceMap": false
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

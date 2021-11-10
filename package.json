@@ -1,0 +1,48 @@
+{
+  "name": "@diva.exchange/i2p-sam",
+  "version": "0.1.0",
+  "description": "diva - Distributed value exchange upholding security, reliability and privacy",
+  "bin": "dist/main.js",
+  "keywords": [
+    "i2p",
+    "sam",
+    "diva.exchange",
+    "p2p"
+  ],
+  "author": "Konrad Baechler <konrad@diva.exchange> (https://diva.exchange)",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://codeberg.org/diva.exchange/i2p-sam.git"
+  },
+  "scripts": {
+    "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
+    "start": "NODE_ENV=production node dist/main.js | pino-pretty -t -i pid,hostname",
+    "start-dev": "NODE_ENV=development ts-node --files src/main.ts | pino-pretty -t -i pid,hostname",
+    "test": "nyc mocha"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@testdeck/mocha": "^0.1.2",
+    "@tsconfig/node14": "^1.0.1",
+    "@types/chai": "^4.2.22",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.11.7",
+    "@typescript-eslint/eslint-plugin": "^5.3.1",
+    "@typescript-eslint/parser": "^5.3.1",
+    "chai": "^4.3.4",
+    "eslint": "^8.2.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "mocha": "^9.1.3",
+    "nyc": "^15.1.0",
+    "pino-pretty": "^7.2.0",
+    "prettier": "^2.4.1",
+    "source-map": "^0.7.3",
+    "source-map-support": "^0.5.20",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
+  }
+}
