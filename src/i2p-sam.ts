@@ -35,10 +35,22 @@ export class I2pSam {
     this.control.on('data', (data: Buffer) => { this.parseReply(data); });
   }
 
-  private hello() {
+  protected hello() {
     this.control.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
   }
   
+    //@FIXME stub
+  async lookup(name: string): Promise<string> {
+    if (!/\.i2p$/.test(name)) {
+      throw new Error('Invalid lookup name');
+    }
+    this.control.write(`NAMING LOOKUP NAME=${name}\n`);
+    
+    //@FIXME wait for the look up result...
+    
+    return '';
+  }
+
   private parseReply(data: Buffer) {
     console.log(data.toString());
     const [c, s, ...args] = data.toString().split(' ');
@@ -62,17 +74,5 @@ export class I2pSam {
       case 'NAMINGREPLY':
         break;
     }
-  }
-  
-  //@FIXME stub
-  async lookup(name: string): Promise<string> {
-    if (!/\.i2p$/.test(name)) {
-      throw new Error('Invalid lookup name');
-    }
-    this.control.write(`NAMING LOOKUP NAME=${name}\n`);
-    
-    //@FIXME wait for the look up result...
-    
-    return '';
   }
 }
