@@ -32,15 +32,28 @@ export class I2pSam {
     this.control = net.createConnection(this.config.sam.port, this.config.sam.host, () => {
       this.hello();
     });
-    this.control.on('data', (data: Buffer) => { this.parseReply(data); });
+
+    this.control.on('error', (error: Error) => {
+      throw error;
+    });
+    this.control.on('data', (data: Buffer) => {
+      this.parseReply(data);
+    });
+    this.control.on('close', () => {
+      throw new Error(`Connection to SAM (${this.config.sam.host}:${this.config.sam.port}) closed`);
+    });
   }
 
-  protected hello() {
+  protected async hello(): Promise<void> {
     this.control.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
+    
+    //@FIXME wait for response
+    
+    throw new Error('Could not connect');
   }
   
     //@FIXME stub
-  async lookup(name: string): Promise<string> {
+  public async lookup(name: string): Promise<string> {
     if (!/\.i2p$/.test(name)) {
       throw new Error('Invalid lookup name');
     }
