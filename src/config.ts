@@ -18,7 +18,6 @@
  */
 
 type tSession = {
-  type: 'stream' | 'datagram' | 'raw';
   name: string;
 };
 
@@ -44,7 +43,7 @@ export type Configuration = {
 export class Config {
 
   private defaultConfig: Configuration = {
-    session: { type: 'stream', name: '' },
+    session: { name: '' },
     listen: { port: 20211, host: '127.0.0.1' },
     sam: { port: 7656, host: '127.0.0.1' },
   }
