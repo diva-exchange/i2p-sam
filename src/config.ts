@@ -17,8 +17,10 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
+import nanoid from 'nanoid';
+
 type tSession = {
-  name: string;
+  id: string;
 };
 
 type tListen = {
@@ -43,7 +45,7 @@ export type Configuration = {
 export class Config {
 
   private defaultConfig: Configuration = {
-    session: { name: '' },
+    session: { id: '' },
     listen: { port: 20211, host: '127.0.0.1' },
     sam: { port: 7656, host: '127.0.0.1' },
   }
@@ -54,6 +56,7 @@ export class Config {
 
   constructor(c?: Configuration) {
     this.session = c.session || this.defaultConfig.session;
+    this.session.id = this.session.id || nanoid(16) ;
     this.listen = c.listen || this.defaultConfig.listen;
     this.sam = c.sam || this.defaultConfig.sam;
   }
