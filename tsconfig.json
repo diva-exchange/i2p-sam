@@ -1,6 +1,7 @@
 {
   "extends": "@tsconfig/node14/tsconfig.json",
   "compilerOptions": {
+    "moduleResolution": "node",
     "target": "es2018",
     "strictNullChecks": true,
     "esModuleInterop": true,
