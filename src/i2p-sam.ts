@@ -18,17 +18,22 @@
  */
 
 import { Configuration, Config } from 'config';
+import { EventEmitter } from 'events';
 import net from 'net';
 
 const SAM_VERSION = '3.1';
 
 export class I2pSam {
 
+  protected eventEmitter: EventEmitter;
   protected config: Config;
   protected socketControl: net.Socket;
   
   protected constructor(c: Configuration) {
     this.config = new Config(c);
+
+    this.eventEmitter = new EventEmitter();
+
     this.socketControl = net.createConnection(this.config.sam.port, this.config.sam.host, async () => {
       await this.hello();
     });
@@ -46,23 +51,25 @@ export class I2pSam {
   }
 
   protected async hello(): Promise<void> {
-    this.socketControl.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
-    
-    //@FIXME wait for response
-    
-    throw new Error('Could not connect');
+    return new Promise((resolve, reject) => {
+      this.eventEmitter.once('hello', resolve);
+      this.eventEmitter.once('error', reject);
+      this.socketControl.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
+    });
   }
   
-    //@FIXME stub
   public async lookup(name: string): Promise<string> {
-    if (!/\.i2p$/.test(name)) {
-      throw new Error('Invalid lookup name');
-    }
-    this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`);
-    
-    //@FIXME wait for the look up result...
-    
-    return '';
+    return new Promise((resolve, reject) => {
+      if (!/\.i2p$/.test(name)) {
+        reject(new Error('Invalid lookup name: ' + name));
+      }
+      this.eventEmitter.once('naming', (result: string) => {
+        resolve(result);
+      });
+      this.eventEmitter.once('error', reject);
+
+      this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`);
+    });
   }
 
   private parseReply(data: Buffer) {
@@ -71,22 +78,34 @@ export class I2pSam {
 
     // error handling
     if (!args.includes('RESULT=OK')) {
-      const e: Error = new Error('SAM command failed');
-      if (!this.config.sam.onError) {  
-        throw e;
-      } else {
-        this.config.sam.onError(e);
-      }
+      this.eventEmitter.emit('error', new Error('SAM command failed: ' + data.toString()));
     }
     
     // command reply handling
     switch (c + s) {
       case 'HELLOREPLY':
+        this.eventEmitter.emit('hello');
         break;
       case 'SESSIONSTATUS':
+        this.eventEmitter.emit('session', args);
         break;
       case 'NAMINGREPLY':
+        for (const s of args) {
+           const [k, v] = s.split('=');
+           if (k === 'RESULT') { 
+             this.eventEmitter.emit('naming', v);
+             break;
+          }
+        }
         break;
+      case 'STREAMSTATUS':
+        this.eventEmitter.emit('stream-status', args);
+        break;
+      case 'STREAMACCEPT':
+        this.eventEmitter.emit('stream-accept', args);
+        break;
+      default:
+        this.eventEmitter.emit('error', new Error('Unsupported SAM reply: ' + data.toString()));
     }
   }
 }
