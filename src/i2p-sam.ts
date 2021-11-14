@@ -24,7 +24,7 @@ const SAM_VERSION = '3.1';
 
 enum tStatus { OFFLINE, CONNECTING, CONNECTED, SESSION };
 
-class I2pSam {
+export class I2pSam {
 
   private config: Config;
   private control: net.Socket;
