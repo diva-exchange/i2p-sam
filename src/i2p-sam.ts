@@ -67,8 +67,12 @@ export class I2pSam {
   //@FIXME stub
   async lookup(name: string): Promise<string> {
     if (!/\.i2p$/.test(name)) {
-      return reject(new Error('Invalid lookup name'));
+      throw new Error('Invalid lookup name');
     }
     this.control.write(`NAMING LOOKUP NAME=${name}\n`);
+    
+    //@FIXME wait for the look up result...
+    
+    return '';
   }
 }
