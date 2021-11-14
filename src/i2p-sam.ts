@@ -22,13 +22,10 @@ import net from 'net';
 
 const SAM_VERSION = '3.1';
 
-enum tStatus { OFFLINE, CONNECTING, CONNECTED, SESSION };
-
 export class I2pSam {
 
-  private config: Config;
+  protected config: Config;
   private control: net.Socket;
-  private status: tStatus = tStatus.OFFLINE;
   
   protected constructor(c: Configuration) {
     this.config = new Config(c);
@@ -39,7 +36,6 @@ export class I2pSam {
   }
 
   private hello() {
-    this.status = tStatus.CONNECTING;
     this.control.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
   }
   
@@ -60,11 +56,19 @@ export class I2pSam {
     // command reply handling
     switch (c + s) {
       case 'HELLOREPLY':
-        this.status = tStatus.CONNECTED;
         break;
       case 'SESSIONSTATUS':
-        this.status = tStatus.SESSION;
+        break;
+      case 'NAMINGREPLY':
         break;
     }
-  } 
+  }
+  
+  //@FIXME stub
+  async lookup(name: string): Promise<string> {
+    if (!/\.i2p$/.test(name)) {
+      return reject(new Error('Invalid lookup name'));
+    }
+    this.control.write(`NAMING LOOKUP NAME=${name}\n`);
+  }
 }
