@@ -25,7 +25,7 @@ const SAM_VERSION = '3.1';
 export class I2pSam {
 
   protected config: Config;
-  private control: net.Socket;
+  protected control: net.Socket;
   
   protected constructor(c: Configuration) {
     this.config = new Config(c);
