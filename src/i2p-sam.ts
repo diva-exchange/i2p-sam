@@ -25,27 +25,28 @@ const SAM_VERSION = '3.1';
 export class I2pSam {
 
   protected config: Config;
-  protected control: net.Socket;
+  protected socketControl: net.Socket;
   
   protected constructor(c: Configuration) {
     this.config = new Config(c);
-    this.control = net.createConnection(this.config.sam.port, this.config.sam.host, () => {
-      this.hello();
+    this.socketControl = net.createConnection(this.config.sam.port, this.config.sam.host, async () => {
+      await this.hello();
     });
 
-    this.control.on('error', (error: Error) => {
+    this.socketControl.on('error', (error: Error) => {
       throw error;
     });
-    this.control.on('data', (data: Buffer) => {
+    this.socketControl.on('data', (data: Buffer) => {
       this.parseReply(data);
     });
-    this.control.on('close', () => {
-      throw new Error(`Connection to SAM (${this.config.sam.host}:${this.config.sam.port}) closed`);
+    this.socketControl.on('close', () => {
+      //@FIXME handle closing
+      console.log(`Connection to SAM (${this.config.sam.host}:${this.config.sam.port}) closed`);
     });
   }
 
   protected async hello(): Promise<void> {
-    this.control.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
+    this.socketControl.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
     
     //@FIXME wait for response
     
@@ -57,7 +58,7 @@ export class I2pSam {
     if (!/\.i2p$/.test(name)) {
       throw new Error('Invalid lookup name');
     }
-    this.control.write(`NAMING LOOKUP NAME=${name}\n`);
+    this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`);
     
     //@FIXME wait for the look up result...
     
