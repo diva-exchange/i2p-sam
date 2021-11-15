@@ -20,18 +20,17 @@
 import { I2pSam } from './i2p-sam';
 import { Configuration } from './config';
 import dgram, { Socket } from 'dgram';
+import base64url from 'base64url';
+import { compressSync, uncompressSync } from 'snappy';
 
 export class I2pSamRaw extends I2pSam {
   private socketControlUDP: Socket = {} as Socket; // outgoing
   private socketListen: Socket = {} as Socket; // incoming
+  private localDestination: string = '';
 
   static async make(c: Configuration): Promise<I2pSamRaw> {
     const r = new I2pSamRaw(c);
-    return await (await r.open()).raw();
-  }
-
-  private constructor(c: Configuration) {
-    super(c);
+    return await (await r.open()).initSession();
   }
 
   protected async open(): Promise<I2pSamRaw> {
@@ -46,8 +45,14 @@ export class I2pSamRaw extends I2pSam {
       }
     });
 
+    // no listener available
+    if (!(this.config.listen.port || 0)) {
+      return Promise.resolve(this);
+    }
+
     this.socketListen = dgram.createSocket('udp4', (msg: Buffer) => {
-      this.incoming(msg);
+      this.config.listen.onMessage &&
+        this.config.listen.onMessage(uncompressSync(Buffer.from(base64url.decode(msg.toString(), 'hex'), 'hex')));
     });
     this.socketListen.on('error', (error: Error) => {
       if (this.config.listen.onError) {
@@ -57,22 +62,24 @@ export class I2pSamRaw extends I2pSam {
       }
     });
     this.socketListen.on('close', () => {
-      //@FIXME handle closing
-      console.log(`UDP Socket (${this.config.listen.host}:${this.config.listen.port}) closed`);
+      this.config.listen.onClose && this.config.listen.onClose();
     });
 
-    return new Promise((resolve) => {
-      this.socketListen.bind(this.config.listen.port, this.config.listen.host, () => {
-        //@FIXME logging
-        console.log(`UDP listening on ${this.config.listen.host}:${this.config.listen.port}`);
-        resolve(this);
-      });
-    })
+    return new Promise((resolve, reject) => {
+      try {
+        this.socketListen.bind(this.config.listen.port, this.config.listen.address, () => {
+          resolve(this);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
-  private async raw(): Promise<I2pSamRaw> {
+  private async initSession(): Promise<I2pSamRaw> {
     return new Promise((resolve, reject) => {
-      this.eventEmitter.once('session', () => {
+      this.eventEmitter.once('session', (destination: string) => {
+        this.localDestination = destination.trim();
         resolve(this);
       });
       this.eventEmitter.once('error', reject);
@@ -81,23 +88,33 @@ export class I2pSamRaw extends I2pSam {
           'STYLE=RAW ' +
           `ID=${this.config.session.id} ` +
           'DESTINATION=TRANSIENT ' +
-          `PORT=${this.config.listen.port} ` +
-          `HOST=${this.config.listen.host}\n`
+          `PORT=${this.config.listen.portForward} ` +
+          `HOST=${this.config.listen.hostForward}\n`
       );
     });
   }
 
-  private incoming(msg: Buffer) {
-    console.log(msg.toString());
-
-    this.config.listen.onMessage && this.config.listen.onMessage(msg);
+  me(): string {
+    return this.localDestination;
   }
 
-  send(msg: Buffer) {
-    this.socketControlUDP.send(msg, this.config.sam.portControlUDP, this.config.sam.hostControl);
+  async send(destination: string, msg: Buffer): Promise<void> {
+    if (/\.i2p$/.test(destination)) {
+      destination = await this.lookup(destination);
+    }
+
+    return new Promise((resolve, reject) => {
+      const s =
+        '3.0 ' +
+        `${this.config.session.id} ${destination}\n` +
+        base64url.encode(compressSync(msg).toString('hex'), 'hex');
+      this.socketControlUDP.send(s, this.config.sam.portControlUDP, this.config.sam.hostControl, (error) => {
+        error ? reject(error) : resolve();
+      });
+    });
   }
 }
 
-export const I2PSAMRaw: Function = async (c: Configuration = {} as Configuration) => {
+export const I2PSAMRaw = async (c: Configuration = {} as Configuration) => {
   return I2pSamRaw.make(c);
 };

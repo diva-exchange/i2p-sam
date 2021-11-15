@@ -44,16 +44,19 @@ export class I2pSam {
       }
     });
     this.socketControl.on('close', () => {
-      //@FIXME handle closing
-      console.log(`Connection to SAM (${this.config.sam.hostControl}:${this.config.sam.portControlTCP}) closed`);
+      this.config.sam.onClose && this.config.sam.onClose();
     });
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.socketControl.connect(
         { host: this.config.sam.hostControl, port: this.config.sam.portControlTCP },
         async () => {
-          await this.hello();
-          resolve(true);
+          try {
+            await this.hello();
+            resolve(this);
+          } catch (error) {
+            reject(error);
+          }
         }
       );
     });
@@ -61,10 +64,16 @@ export class I2pSam {
 
   protected async hello(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.eventEmitter.once('hello', resolve);
-      this.eventEmitter.once('error', reject);
-      // this.socketControl.write(`HELLO VERSION MIN=${SAM_VERSION}\n`);
-      this.socketControl.write('HELLO VERSION\n');
+      this.eventEmitter.once('hello', () => {
+        resolve();
+      });
+      this.eventEmitter.once('error', (error: Error) => {
+        reject(error);
+      });
+      const min = this.config.sam.versionMin || false;
+      const max = this.config.sam.versionMax || false;
+
+      this.socketControl.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`);
     });
   }
 
@@ -76,46 +85,58 @@ export class I2pSam {
       this.eventEmitter.once('naming', (result: string) => {
         resolve(result);
       });
-      this.eventEmitter.once('error', reject);
+      this.eventEmitter.once('error', (error) => {
+        reject(error);
+      });
 
       this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`);
     });
   }
 
   private parseReply(data: Buffer) {
-    console.log(data.toString());
     const [c, s, ...args] = data.toString().split(' ');
+
+    //@TODO this is.... ugly....
+    if (c + s === 'RAWRECEIVED') {
+      return;
+    }
 
     // error handling
     if (!args.includes('RESULT=OK')) {
-      this.eventEmitter.emit('error', new Error('SAM command failed: ' + data.toString()));
+      //@FIXME logging
+      console.debug(data.toString());
+
+      return this.eventEmitter.emit('error', new Error('SAM command failed: ' + data.toString()));
     }
 
     // command reply handling
     switch (c + s) {
       case 'HELLOREPLY':
-        this.eventEmitter.emit('hello');
-        break;
+        return this.eventEmitter.emit('hello');
       case 'SESSIONSTATUS':
-        this.eventEmitter.emit('session', args);
-        break;
+        for (const s of args) {
+          const [k, v] = s.split('=');
+          if (k === 'DESTINATION') {
+            return this.eventEmitter.emit('session', v);
+          }
+        }
+        return this.eventEmitter.emit('error', new Error('SESSION failed: ' + data.toString()));
       case 'NAMINGREPLY':
         for (const s of args) {
           const [k, v] = s.split('=');
-          if (k === 'RESULT') {
-            this.eventEmitter.emit('naming', v);
-            break;
+          if (k === 'VALUE') {
+            return this.eventEmitter.emit('naming', v);
           }
         }
-        break;
+        return this.eventEmitter.emit('error', new Error('NAMING failed: ' + data.toString()));
       case 'STREAMSTATUS':
-        this.eventEmitter.emit('stream-status', args);
-        break;
+        return this.eventEmitter.emit('stream-status', args);
       case 'STREAMACCEPT':
-        this.eventEmitter.emit('stream-accept', args);
-        break;
+        return this.eventEmitter.emit('stream-accept', args);
       default:
-        this.eventEmitter.emit('error', new Error('Unsupported SAM reply: ' + data.toString()));
+        //@FIXME logging
+        console.debug(data.toString());
+        return this.eventEmitter.emit('error', new Error('Unsupported SAM reply: ' + data.toString()));
     }
   }
 }

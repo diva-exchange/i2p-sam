@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "diva - Distributed value exchange upholding security, reliability and privacy",
   "bin": "dist/main.js",
   "keywords": [
@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "base64url": "^3.0.1",
-    "nanoid": "^3.1.30"
+    "nanoid": "^3.1.30",
+    "snappy": "^7.0.5"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.1",

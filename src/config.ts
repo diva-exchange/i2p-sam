@@ -22,33 +22,54 @@ import { nanoid } from 'nanoid';
 const DEFAULT_LENGTH_SESSION = 16;
 
 type tSession = {
-  id: string;
+  id?: string;
 };
 
 type tListen = {
-  host: string;
-  port: number;
+  address?: string;
+  port?: number;
+  hostForward?: string;
+  portForward?: number;
   onMessage?: Function;
   onError?: Function;
+  onClose?: Function;
 };
 
 type tSam = {
   hostControl: string;
   portControlTCP: number;
   portControlUDP: number;
+  versionMin?: string;
+  versionMax?: string;
   onError?: Function;
+  onClose?: Function;
 };
 
 export type Configuration = {
-  session: tSession;
-  listen: tListen;
+  session?: tSession;
+  listen?: tListen;
   sam: tSam;
 };
 
 const DEFAULT_CONFIGURATION: Configuration = {
   session: { id: '' },
-  listen: { host: '127.0.0.1', port: 20211 },
-  sam: { hostControl: '127.0.0.1', portControlTCP: 7656, portControlUDP: 7655 },
+  listen: {
+    address: '127.0.0.1',
+    port: 0,
+    hostForward: '127.0.0.1',
+    portForward: 0,
+    onError: () => {},
+    onClose: () => {},
+  },
+  sam: {
+    hostControl: '127.0.0.1',
+    portControlTCP: 7656,
+    portControlUDP: 7655,
+    versionMin: '',
+    versionMax: '',
+    onError: () => {},
+    onClose: () => {},
+  },
 };
 
 export class Config {
@@ -60,7 +81,9 @@ export class Config {
     this.session = { ...DEFAULT_CONFIGURATION.session, ...(c.session || {}) };
     this.session.id = this.session.id || nanoid(DEFAULT_LENGTH_SESSION);
     this.listen = { ...DEFAULT_CONFIGURATION.listen, ...(c.listen || {}) };
-    this.listen.port = Config.port(this.listen.port);
+    this.listen.port = Number(this.listen.port) > 0 ? Config.port(Number(this.listen.port)) : 0;
+    this.listen.portForward =
+      Number(this.listen.portForward) > 0 ? Config.port(Number(this.listen.portForward)) : this.listen.port;
     this.sam = { ...DEFAULT_CONFIGURATION.sam, ...(c.sam || {}) };
     this.sam.portControlTCP = Config.port(this.sam.portControlTCP);
     this.sam.portControlUDP = Config.port(this.sam.portControlUDP);

@@ -28,6 +28,10 @@ class TestConfig {
   default() {
     const c = new Config({} as Configuration);
     expect(c.session.id).is.not.empty;
+    c.listen.onError ? expect(c.listen.onError()).to.be.undefined : expect(false).to.be.true;
+    c.listen.onClose ? expect(c.listen.onClose()).to.be.undefined : expect(false).to.be.true;
+    c.sam.onError ? expect(c.sam.onError()).to.be.undefined : expect(false).to.be.true;
+    c.sam.onClose ? expect(c.sam.onClose()).to.be.undefined : expect(false).to.be.true;
   }
 
   @test
@@ -39,9 +43,12 @@ class TestConfig {
   @test
   sessionInvalidPort() {
     const c1 = new Config({ listen: { port: 0 } } as Configuration);
-    expect(c1.listen.port).eq(1025);
+    expect(c1.listen.port).eq(0);
 
-    const c2 = new Config({ listen: { port: 65536 } } as Configuration);
-    expect(c2.listen.port).eq(65535);
+    const c2 = new Config({ listen: { port: 1 } } as Configuration);
+    expect(c2.listen.port).eq(1025);
+
+    const c3 = new Config({ listen: { port: 65536 } } as Configuration);
+    expect(c3.listen.port).eq(65535);
   }
 }

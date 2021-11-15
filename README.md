@@ -1,16 +1,107 @@
 # I2P SAM
 
-An I2P SAM library.
+An I2P SAM library. Useful to let applications communicate through the privacy-by-design I2P network.
+
+## Quick Start
+
+### Using Streams (TCP)
+
+```
+const stream = await I2PSAMStream({
+  sam: {
+    host: 172.19.74.11,   # your local I2P SAM host
+    port: 7656            # your local I2P SAM port
+  },
+  listen: { 
+    onMessage: (data: Buffer) => {
+      console.log(data.toString());
+    }
+  }
+}); 
+stream.send('Hello World');
+```
+
+### Using Datagrams (UDP)
+
+```
+const raw = await I2PSAMRaw({
+  sam: {
+    host: 172.19.74.11,   # your local I2P SAM host
+    port: 7656            # your local I2P SAM port
+  },
+  listen: { 
+    onMessage: (data: Buffer) => { console.log(data.toString()); }
+  }
+}); 
+raw.send('Hello World');
+```
+
+### API
+
+### Configuration / Options
+```
+type tSession = {
+  id?: string;
+};
+
+type tListen = {
+  address?: string;
+  port?: number;
+  hostForward?: string;
+  portForward?: number;
+  onMessage?: Function;
+  onError?: Function;
+  onClose?: Function;
+};
+
+type tSam = {
+  hostControl: string;
+  portControlTCP: number;
+  portControlUDP: number;
+  versionMin?: string;
+  versionMax?: string;
+  onError?: Function;
+  onClose?: Function;
+};
+
+export type Configuration = {
+  session?: tSession;
+  listen?: tListen;
+  sam: tSam;
+};
+```
+
+#### lookup(destination: string)
+@TODO
+
+#### send(msg: Buffer)
+@TODO
 
 ## How to Run Unit Tests
 
-Unit tests can be executed using:
+Prepare the test environment by creating three docker container:
+
+```
+docker-compose -f test/sam.diva.i2p.yml up -d
+```
+
+Check wether the I2P test nodes are properly running by accessing the local consoles running on: http://172.19.74.11:7070, http://172.19.74.12:7070 or http://172.19.74.13:7070
+
+To modify the IP addresses of the local consoles, adapt the file `test/sam.diva.i2p.yml`.
+
+After the docker containers are running for two or three minutes (reason: the I2P network needs some minutes to build), execute the unit tests:
 
 ```
 npm run test
 ```
-Unit tests contain functional tests and will create some blocks within the local storage. The underlying network (like I2P) must be configured properly (the configuration is Work-In-Progress).
 
+Stop all container (and purge all data within):
+```
+docker-compose -f test/sam.diva.i2p.yml down --volumes
+```
+ 
+
+## Linting
 
 To lint the code, use
 ```
