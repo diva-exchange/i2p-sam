@@ -17,71 +17,87 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import { I2pSam } from 'i2p-sam';
-import { Configuration } from 'config';
-import dgram from 'dgram';
+import { I2pSam } from './i2p-sam';
+import { Configuration } from './config';
+import dgram, { Socket } from 'dgram';
 
-const PORT_RAW_CONTROL = 7655;
-
-class I2pSamRaw extends I2pSam {
-
-  private socketControlRaw: dgram.Socket; // outgoing
-  private socketRaw: dgram.Socket; // incoming
+export class I2pSamRaw extends I2pSam {
+  private socketControlUDP: Socket = {} as Socket; // outgoing
+  private socketListen: Socket = {} as Socket; // incoming
 
   static async make(c: Configuration): Promise<I2pSamRaw> {
     const r = new I2pSamRaw(c);
-    return await r.raw();
+    return await (await r.open()).raw();
   }
 
   private constructor(c: Configuration) {
     super(c);
+  }
 
-    this.socketControlRaw = dgram.createSocket();
-    this.socketControlRaw.on('error', (error: Error) => {
-      throw error;
+  protected async open(): Promise<I2pSamRaw> {
+    await super.open();
+
+    this.socketControlUDP = dgram.createSocket({ type: 'udp4' });
+    this.socketControlUDP.on('error', (error: Error) => {
+      if (this.config.sam.onError) {
+        this.config.sam.onError(error);
+      } else {
+        throw error;
+      }
     });
-    this.socketControlRaw.on('close', () => {
-      //@FIXME handle closing
-      console.log(`UDP Socket (${this.config.sam.host}:${PORT_RAW_CONTROL}) closed`);
+
+    this.socketListen = dgram.createSocket('udp4', (msg: Buffer) => {
+      this.incoming(msg);
     });
-    this.socketControlRaw.bind({port: PORT_RAW_CONTROL, address: this.config.sam.host});
-    
-    this.socketRaw = dgram.createSocket();
-    this.socketRaw.on('error', (error: Error) => {
-      throw error;
+    this.socketListen.on('error', (error: Error) => {
+      if (this.config.listen.onError) {
+        this.config.listen.onError(error);
+      } else {
+        throw error;
+      }
     });
-    this.socketRaw.on('message', (data: Buffer) => {
-      this.incoming(data);
-    });
-    this.socketRaw.on('close', () => {
+    this.socketListen.on('close', () => {
       //@FIXME handle closing
       console.log(`UDP Socket (${this.config.listen.host}:${this.config.listen.port}) closed`);
     });
-    this.socketRaw.bind({port: this.config.listen.port, address: this.config.listen.host});
+
+    return new Promise((resolve) => {
+      this.socketListen.bind(this.config.listen.port, this.config.listen.host, () => {
+        //@FIXME logging
+        console.log(`UDP listening on ${this.config.listen.host}:${this.config.listen.port}`);
+        resolve(this);
+      });
+    })
   }
 
-  //@FIXME stub
   private async raw(): Promise<I2pSamRaw> {
-    this.socketControl.write(`SESSION CREATE ` +
-      `STYLE=RAW ID=${this.config.session.id} ` +
-      `DESTINATION=TRANSIENT ` +
-      `PORT=${this.config.listen.port} ` +
-      `HOST=${this.config.listen.host}\n`);
-
-    //@FIXME wait for the SESSION result
-    return this;    
+    return new Promise((resolve, reject) => {
+      this.eventEmitter.once('session', () => {
+        resolve(this);
+      });
+      this.eventEmitter.once('error', reject);
+      this.socketControl.write(
+        'SESSION CREATE ' +
+          'STYLE=RAW ' +
+          `ID=${this.config.session.id} ` +
+          'DESTINATION=TRANSIENT ' +
+          `PORT=${this.config.listen.port} ` +
+          `HOST=${this.config.listen.host}\n`
+      );
+    });
   }
 
-  //@FIXME stub
-  private incoming(data: Buffer) {
-    console.log(data.toString());
-    
-    this.config.listen.onMessage && this.config.listen.onMessage(data);
+  private incoming(msg: Buffer) {
+    console.log(msg.toString());
+
+    this.config.listen.onMessage && this.config.listen.onMessage(msg);
   }
-  
-  send(data: Buffer) {
-    this.socketControlRaw.send(data);
+
+  send(msg: Buffer) {
+    this.socketControlUDP.send(msg, this.config.sam.portControlUDP, this.config.sam.hostControl);
   }
 }
 
-export const I2PSAMRaw: Function = (async (c: Configuration) => { return I2pSamRaw.make(c); });
+export const I2PSAMRaw: Function = async (c: Configuration = {} as Configuration) => {
+  return I2pSamRaw.make(c);
+};

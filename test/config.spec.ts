@@ -17,5 +17,31 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-class Main {
+import { suite, test } from '@testdeck/mocha';
+import { expect } from 'chai';
+
+import { Config, Configuration } from '../src/config';
+
+@suite
+class TestConfig {
+  @test
+  default() {
+    const c = new Config({} as Configuration);
+    expect(c.session.id).is.not.empty;
+  }
+
+  @test
+  session() {
+    const c = new Config({ session: { id: 'test' } } as Configuration);
+    expect(c.session.id).eq('test');
+  }
+
+  @test
+  sessionInvalidPort() {
+    const c1 = new Config({ listen: { port: 0 } } as Configuration);
+    expect(c1.listen.port).eq(1025);
+
+    const c2 = new Config({ listen: { port: 65536 } } as Configuration);
+    expect(c2.listen.port).eq(65535);
+  }
 }

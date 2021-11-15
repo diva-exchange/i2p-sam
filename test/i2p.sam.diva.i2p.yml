@@ -1,0 +1,75 @@
+#
+# Copyright (C) 2021 diva.exchange
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+#
+
+version: "3.7"
+services:
+  a.sam.diva.i2p:
+    container_name: a.sam.diva.i2p
+    image: divax/i2p:latest
+    restart: unless-stopped
+    environment:
+      ENABLE_SAM: 1
+      BANDWIDTH: P
+    volumes:
+      - a.sam.diva.i2p:/home/i2pd/
+    networks:
+      network.sam.diva.i2p:
+        ipv4_address: 172.19.74.11
+
+  b.sam.diva.i2p:
+    container_name: b.sam.diva.i2p
+    image: divax/i2p:latest
+    restart: unless-stopped
+    environment:
+      ENABLE_SAM: 1
+      BANDWIDTH: P
+    volumes:
+      - b.sam.diva.i2p:/home/i2pd/
+    networks:
+      network.sam.diva.i2p:
+        ipv4_address: 172.19.74.12
+
+  c.sam.diva.i2p:
+    container_name: c.sam.diva.i2p
+    image: divax/i2p:latest
+    restart: unless-stopped
+    environment:
+      ENABLE_SAM: 1
+      BANDWIDTH: P
+    volumes:
+      - c.sam.diva.i2p:/home/i2pd/
+    networks:
+      network.sam.diva.i2p:
+        ipv4_address: 172.19.74.13
+
+networks:
+  network.sam.diva.i2p:
+    name: network.sam.diva.i2p
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.19.74.0/24
+
+volumes:
+  a.sam.diva.i2p:
+    name: a.sam.diva.i2p
+  b.sam.diva.i2p:
+    name: b.sam.diva.i2p
+  c.sam.diva.i2p:
+    name: c.sam.diva.i2p

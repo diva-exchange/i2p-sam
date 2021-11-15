@@ -17,36 +17,45 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import { Configuration, Config } from 'config';
 import { EventEmitter } from 'events';
-import net from 'net';
-
-const SAM_VERSION = '3.1';
+import { Config, Configuration } from './config';
+import { Socket } from 'net';
 
 export class I2pSam {
-
-  protected eventEmitter: EventEmitter;
   protected config: Config;
-  protected socketControl: net.Socket;
-  
+  protected eventEmitter: EventEmitter;
+  protected socketControl: Socket = {} as Socket;
+
   protected constructor(c: Configuration) {
     this.config = new Config(c);
-
     this.eventEmitter = new EventEmitter();
+  }
 
-    this.socketControl = net.createConnection(this.config.sam.port, this.config.sam.host, async () => {
-      await this.hello();
-    });
-
-    this.socketControl.on('error', (error: Error) => {
-      throw error;
-    });
+  protected async open(): Promise<any> {
+    this.socketControl = new Socket();
     this.socketControl.on('data', (data: Buffer) => {
       this.parseReply(data);
     });
+    this.socketControl.on('error', (error: Error) => {
+      if (this.config.sam.onError) {
+        this.config.sam.onError(error);
+      } else {
+        throw error;
+      }
+    });
     this.socketControl.on('close', () => {
       //@FIXME handle closing
-      console.log(`Connection to SAM (${this.config.sam.host}:${this.config.sam.port}) closed`);
+      console.log(`Connection to SAM (${this.config.sam.hostControl}:${this.config.sam.portControlTCP}) closed`);
+    });
+
+    return new Promise((resolve) => {
+      this.socketControl.connect(
+        { host: this.config.sam.hostControl, port: this.config.sam.portControlTCP },
+        async () => {
+          await this.hello();
+          resolve(true);
+        }
+      );
     });
   }
 
@@ -54,11 +63,12 @@ export class I2pSam {
     return new Promise((resolve, reject) => {
       this.eventEmitter.once('hello', resolve);
       this.eventEmitter.once('error', reject);
-      this.socketControl.write(`HELLO VERSION MIN=${SAM_VERSION} MAX=${SAM_VERSION}\n`);
+      // this.socketControl.write(`HELLO VERSION MIN=${SAM_VERSION}\n`);
+      this.socketControl.write('HELLO VERSION\n');
     });
   }
-  
-  public async lookup(name: string): Promise<string> {
+
+  async lookup(name: string): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!/\.i2p$/.test(name)) {
         reject(new Error('Invalid lookup name: ' + name));
@@ -80,7 +90,7 @@ export class I2pSam {
     if (!args.includes('RESULT=OK')) {
       this.eventEmitter.emit('error', new Error('SAM command failed: ' + data.toString()));
     }
-    
+
     // command reply handling
     switch (c + s) {
       case 'HELLOREPLY':
@@ -91,10 +101,10 @@ export class I2pSam {
         break;
       case 'NAMINGREPLY':
         for (const s of args) {
-           const [k, v] = s.split('=');
-           if (k === 'RESULT') { 
-             this.eventEmitter.emit('naming', v);
-             break;
+          const [k, v] = s.split('=');
+          if (k === 'RESULT') {
+            this.eventEmitter.emit('naming', v);
+            break;
           }
         }
         break;

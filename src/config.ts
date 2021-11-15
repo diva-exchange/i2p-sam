@@ -17,22 +17,25 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import nanoid from 'nanoid';
+import { nanoid } from 'nanoid';
+
+const DEFAULT_LENGTH_SESSION = 16;
 
 type tSession = {
   id: string;
 };
 
 type tListen = {
-  port: number;
   host: string;
+  port: number;
   onMessage?: Function;
   onError?: Function;
 };
 
 type tSam = {
-  port: number;
-  host: string;
+  hostControl: string;
+  portControlTCP: number;
+  portControlUDP: number;
   onError?: Function;
 };
 
@@ -42,43 +45,27 @@ export type Configuration = {
   sam: tSam;
 };
 
+const DEFAULT_CONFIGURATION: Configuration = {
+  session: { id: '' },
+  listen: { host: '127.0.0.1', port: 20211 },
+  sam: { hostControl: '127.0.0.1', portControlTCP: 7656, portControlUDP: 7655 },
+};
+
 export class Config {
-
-  private defaultConfig: Configuration = {
-    session: { id: '' },
-    listen: { port: 20211, host: '127.0.0.1' },
-    sam: { port: 7656, host: '127.0.0.1' },
-  }
-
   public session: tSession;
   public listen: tListen;
   public sam: tSam;
 
-  constructor(c?: Configuration) {
-    this.session = c.session || this.defaultConfig.session;
-    this.session.id = this.session.id || nanoid(16) ;
-    this.listen = c.listen || this.defaultConfig.listen;
-    this.sam = c.sam || this.defaultConfig.sam;
+  constructor(c: Configuration) {
+    this.session = { ...DEFAULT_CONFIGURATION.session, ...(c.session || {}) };
+    this.session.id = this.session.id || nanoid(DEFAULT_LENGTH_SESSION);
+    this.listen = { ...DEFAULT_CONFIGURATION.listen, ...(c.listen || {}) };
+    this.listen.port = Config.port(this.listen.port);
+    this.sam = { ...DEFAULT_CONFIGURATION.sam, ...(c.sam || {}) };
+    this.sam.portControlTCP = Config.port(this.sam.portControlTCP);
+    this.sam.portControlUDP = Config.port(this.sam.portControlUDP);
   }
 
-  /**
-   * Boolean transformation
-   * Returns True or False
-   *
-   * @param {any} n - Anything which will be interpreted as a number
-   */
-  private static tf(n: any): boolean {
-    return Number(n) > 0;
-  }
-
-  /**
-   * Number transformation
-   * Boundaries
-   *
-   * @param {any} n - Anything transformed to a number
-   * @param {number} min - Boundary minimum
-   * @param {number} max - Boundary maximum
-   */
   private static b(n: any, min: number, max: number): number {
     n = Number(n);
     min = Math.floor(min);
@@ -86,7 +73,7 @@ export class Config {
     return n >= min && n <= max ? Math.floor(n) : n > max ? max : min;
   }
 
-  private static port(n: any): number {
-    return Number(n) ? Config.b(Number(n), 1025, 65535) : 0;
+  private static port(n: number): number {
+    return Config.b(n, 1025, 65535);
   }
 }
