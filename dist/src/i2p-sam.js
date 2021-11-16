@@ -152,13 +152,16 @@ class I2pSam {
             });
         });
     }
-    me() {
+    getPublicKey() {
         return this.publicKey;
+    }
+    getPrivateKey() {
+        return this.privateKey;
     }
     getKeyPair() {
         return {
-            public: this.publicKey,
-            private: this.privateKey,
+            public: this.getPublicKey(),
+            private: this.getPrivateKey(),
         };
     }
 }

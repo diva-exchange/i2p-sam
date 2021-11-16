@@ -195,14 +195,18 @@ export class I2pSam {
     });
   }
 
-  me(): string {
+  getPublicKey(): string {
     return this.publicKey;
+  }
+
+  getPrivateKey(): string {
+    return this.privateKey;
   }
 
   getKeyPair(): { public: string; private: string } {
     return {
-      public: this.publicKey,
-      private: this.privateKey,
+      public: this.getPublicKey(),
+      private: this.getPrivateKey(),
     };
   }
 }

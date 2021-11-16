@@ -2,29 +2,68 @@
 
 An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a "privacy-by-design" network.
 
+To get I2P quickly up and running please take a look at this project: https://codeberg.org/diva.exchange/i2p
+
 ## Quick Start
 
-### Using Datagrams (UDP)
+### How to Use Datagrams (UDP)
+
+Send messages from peer A to peer B:
 
 ```
-const raw = await I2PSAMRaw({
+// instantiate Peer A
+const peerA = await I2PSAMRaw({
   sam: {
-    host: 127.0.0.1,   # your local I2P SAM host
-    port: 7656         # your local I2P SAM port
+    host: 127.0.0.1,     # your local I2P SAM host
+    port: 7656           # your local I2P SAM port
+  }
+}); 
+
+// instantiate Peer B
+const peerB = await I2PSAMRaw({
+  sam: {
+    host: 127.0.0.1,     # your local I2P SAM host
+    port: 7656           # your local I2P SAM port
   },
   listen: { 
+    address: 127.0.0.1,  # udp listener
+    port: 20202,         # udp listener
     onMessage: (data: Buffer) => {
-      console.log(data.toString());
+      console.log('Incoming Data: ' + data.toString());
     }
   }
 }); 
-raw.send('diva.i2p', 'Hello DIVA');
+
+// send 500 messages via UDP, every 500ms
+// IMPORTANT: UDP is by design not reliable. Some messages might get lost.
+const msg: string = 'Hello Peer B - I am Peer A';
+await new Promise((resolve) => {
+  let t = 0;
+  const i = setInterval(async () => {
+    await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+    if (t++ >= 500) {
+      clearInterval(i);
+      resolve(true);
+    }
+  }, 500);
+});
 ```
 
 ### Using Streams (TCP)
 @TODO
 
-### API
+## API
+
+### lookup(name: string): Promise\<string\>
+
+### getPublicKey(): string
+
+### getPrivateKey(): string
+
+### getKeyPair(): { public: string, private: string }
+
+### send(destination: string, msg: Buffer): Promise\<void\>
+
 
 ### Configuration / Options
 ```
@@ -114,6 +153,10 @@ XMR: 42QLvHvkc9bahHadQfEzuJJx4ZHnGhQzBXa8C9H3c472diEvVRzevwpN7VAUpCPePCiDhehH4BA
 BTC: 3Ebuzhsbs6DrUQuwvMu722LhD8cNfhG1gs
 
 Awesome, thank you!
+
+##References
+
+I2Pd, see https://i2pd.readthedocs.io/
 
 ## License
 
