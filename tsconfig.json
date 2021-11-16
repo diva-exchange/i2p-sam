@@ -13,6 +13,7 @@
     "sourceMap": false
   },
   "include": [
+    "i2psam.ts",
     "src/**/*"
   ]
 }

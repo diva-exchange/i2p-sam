@@ -1,25 +1,31 @@
 {
   "name": "@diva.exchange/i2p-sam",
   "version": "0.4.0",
-  "description": "diva - Distributed value exchange upholding security, reliability and privacy",
-  "bin": "dist/main.js",
+  "description": "I2P SAM: peer-to-peer communication between applications over I2P",
+  "main": "dist/i2psam.js",
+  "files": [
+    "dist/"
+  ],
   "keywords": [
     "i2p",
     "sam",
-    "diva.exchange",
-    "p2p"
+    "p2p",
+    "diva.exchange"
   ],
   "author": "Konrad Baechler <konrad@diva.exchange> (https://diva.exchange)",
-  "license": "AGPL-3.0-or-later",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://codeberg.org/diva.exchange/i2p-sam.git"
   },
   "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist/*",
     "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
-    "start": "NODE_ENV=production node dist/main.js | pino-pretty -t -i pid,hostname",
-    "start-dev": "NODE_ENV=development ts-node --files src/main.ts | pino-pretty -t -i pid,hostname",
     "test": "TS_NODE_PROJECT=./test/tsconfig.json NODE_ENV=test LOG_LEVEL=trace nyc mocha"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   },
   "dependencies": {
     "base64url": "^3.0.1",

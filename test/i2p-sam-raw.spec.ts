@@ -19,7 +19,8 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2pSamRaw, I2PSAMRaw } from '../src/i2p-sam-raw';
+import { I2PSAMRaw } from '../i2psam';
+import { I2pSamRaw } from '../src/i2p-sam-raw';
 
 @suite
 class TestI2pSamRaw {

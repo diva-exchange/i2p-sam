@@ -113,7 +113,3 @@ export class I2pSamRaw extends I2pSam {
     });
   }
 }
-
-export const I2PSAMRaw = async (c: Configuration = {} as Configuration) => {
-  return I2pSamRaw.make(c);
-};

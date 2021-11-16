@@ -80,7 +80,3 @@ class I2pSamStream extends I2pSam {
     this.config.listen.onMessage && this.config.listen.onMessage(data);
   }
 }
-
-export const I2PSAMStream: Function = async (c: Configuration) => {
-  return I2pSamStream.make(c);
-};

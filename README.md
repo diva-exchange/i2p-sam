@@ -1,11 +1,8 @@
 # I2P SAM
 
-An I2P SAM library. Useful to let applications communicate through the privacy-by-design I2P network.
+An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a "privacy-by-design" network.
 
 ## Quick Start
-
-### Using Streams (TCP)
-@TODO
 
 ### Using Datagrams (UDP)
 
@@ -23,6 +20,9 @@ const raw = await I2PSAMRaw({
 }); 
 raw.send('diva.i2p', 'Hello DIVA');
 ```
+
+### Using Streams (TCP)
+@TODO
 
 ### API
 
@@ -115,4 +115,4 @@ Awesome, thank you!
 
 ## License
 
-[AGPLv3](LICENSE)
+[MIT](LICENSE)
