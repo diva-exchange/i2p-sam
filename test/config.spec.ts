@@ -28,16 +28,19 @@ class TestConfig {
   default() {
     const c = new Config({} as Configuration);
     expect(c.session.id).is.not.empty;
-    c.listen.onError ? expect(c.listen.onError()).to.be.undefined : expect(false).to.be.true;
-    c.listen.onClose ? expect(c.listen.onClose()).to.be.undefined : expect(false).to.be.true;
-    c.sam.onError ? expect(c.sam.onError()).to.be.undefined : expect(false).to.be.true;
-    c.sam.onClose ? expect(c.sam.onClose()).to.be.undefined : expect(false).to.be.true;
+    expect(c.listen.onError).to.throw();
+    expect(c.listen.onClose && c.listen.onClose()).to.be.undefined;
+    expect(c.sam.onError).to.throw();
+    expect(c.sam.onClose && c.sam.onClose()).to.be.undefined;
   }
 
   @test
   session() {
-    const c = new Config({ session: { id: 'test' } } as Configuration);
-    expect(c.session.id).eq('test');
+    const c1 = new Config({ session: { id: 'test' } } as Configuration);
+    expect(c1.session.id).eq('test');
+
+    const c2 = new Config({ listen: { portForward: 10000 } } as Configuration);
+    expect(c2.listen.portForward).eq(10000);
   }
 
   @test

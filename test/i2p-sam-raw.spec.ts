@@ -63,12 +63,17 @@ class TestI2pSamRaw {
 
     console.log('Start sending data...');
 
+    // send some data to diva.i2p
+    await i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
+
+    const publicKey1 = i2pRecipient.me();
     setInterval(async () => {
-      i2pRecipient.me() && (await i2pSender.send(i2pRecipient.me(), Buffer.from(Date.now().toString())));
+      await i2pSender.send(publicKey1, Buffer.from(Date.now().toString()));
     }, 1000);
 
+    const publicKey2 = i2pSender.me();
     setInterval(async () => {
-      i2pSender.me() && (await i2pRecipient.send(i2pSender.me(), Buffer.from(Date.now().toString())));
+      await i2pRecipient.send(publicKey2, Buffer.from(Date.now().toString()));
     }, 1000);
 
     await TestI2pSamRaw.wait(60000);

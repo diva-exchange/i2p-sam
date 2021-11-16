@@ -54,20 +54,7 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
         });
     }
     async initSession() {
-        return new Promise((resolve, reject) => {
-            this.eventEmitter.once('session', (destination) => {
-                this.publicKey = destination;
-                resolve(this);
-            });
-            this.eventEmitter.once('error', reject);
-            const dest = this.privateKey || 'TRANSIENT';
-            this.socketControl.write('SESSION CREATE ' +
-                'STYLE=RAW ' +
-                `ID=${this.config.session.id} ` +
-                `DESTINATION=${dest} ` +
-                `PORT=${this.config.listen.portForward} ` +
-                `HOST=${this.config.listen.hostForward}\n`);
-        });
+        return super.initSession('RAW');
     }
     async send(destination, msg) {
         if (/\.i2p$/.test(destination)) {

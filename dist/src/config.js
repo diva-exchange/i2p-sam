@@ -10,7 +10,9 @@ const DEFAULT_CONFIGURATION = {
         port: 0,
         hostForward: '127.0.0.1',
         portForward: 0,
-        onError: () => { },
+        onError: (error) => {
+            throw new Error(error);
+        },
         onClose: () => { },
     },
     sam: {
@@ -19,7 +21,11 @@ const DEFAULT_CONFIGURATION = {
         portControlUDP: 7655,
         versionMin: '',
         versionMax: '',
-        onError: () => { },
+        publicKey: '',
+        privateKey: '',
+        onError: (error) => {
+            throw new Error(error);
+        },
         onClose: () => { },
     },
 };

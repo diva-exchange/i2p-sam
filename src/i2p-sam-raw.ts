@@ -73,27 +73,12 @@ export class I2pSamRaw extends I2pSam {
     });
   }
 
-  private async initSession(): Promise<I2pSamRaw> {
-    return new Promise((resolve, reject) => {
-      this.eventEmitter.once('session', (destination: string) => {
-        this.publicKey = destination;
-        resolve(this);
-      });
-      this.eventEmitter.once('error', reject);
-
-      const dest = this.privateKey || 'TRANSIENT';
-      this.socketControl.write(
-        'SESSION CREATE ' +
-          'STYLE=RAW ' +
-          `ID=${this.config.session.id} ` +
-          `DESTINATION=${dest} ` +
-          `PORT=${this.config.listen.portForward} ` +
-          `HOST=${this.config.listen.hostForward}\n`
-      );
-    });
+  protected async initSession(): Promise<I2pSamRaw> {
+    return super.initSession('RAW');
   }
 
   async send(destination: string, msg: Buffer): Promise<void> {
+    //@TODO implement caching... maybe
     if (/\.i2p$/.test(destination)) {
       destination = await this.lookup(destination);
     }

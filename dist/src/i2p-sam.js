@@ -43,6 +43,9 @@ class I2pSam {
             this.socketControl.connect({ host: this.config.sam.hostControl, port: this.config.sam.portControlTCP }, async () => {
                 try {
                     await this.hello();
+                    if (!this.config.sam.publicKey || !this.config.sam.privateKey) {
+                        await this.generateDestination();
+                    }
                     resolve(this);
                 }
                 catch (error) {
@@ -61,30 +64,42 @@ class I2pSam {
             });
             const min = this.config.sam.versionMin || false;
             const max = this.config.sam.versionMax || false;
-            this.socketControl.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`);
+            this.socketControl.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
+                error && this.eventEmitter.emit('error', error);
+            });
         });
     }
-    async lookup(name) {
+    async initSession(type) {
         return new Promise((resolve, reject) => {
-            if (!/\.i2p$/.test(name)) {
-                reject(new Error('Invalid lookup name: ' + name));
+            this.eventEmitter.once('session', (destination) => {
+                this.publicKey = destination;
+                resolve(this);
+            });
+            this.eventEmitter.once('error', reject);
+            let s = `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
+            switch (type) {
+                case 'STREAM':
+                    throw new Error('UNSUPPORTED');
+                case 'DATAGRAM':
+                case 'RAW':
+                    s += `STYLE=RAW PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}\n`;
+                    break;
             }
-            this.eventEmitter.once('naming', (result) => {
-                resolve(result);
+            this.socketControl.write(s, (error) => {
+                error && this.eventEmitter.emit('error', error);
             });
-            this.eventEmitter.once('error', (error) => {
-                reject(error);
-            });
-            this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`);
         });
     }
     async generateDestination() {
         this.publicKey = '';
         this.privateKey = '';
-        this.socketControl.write('DEST GENERATE SIGNATURE_TYPE=EdDSA_SHA512_Ed25519\n');
-    }
-    me() {
-        return this.publicKey;
+        return new Promise((resolve, reject) => {
+            this.eventEmitter.once('destination', resolve);
+            this.eventEmitter.once('error', reject);
+            this.socketControl.write('DEST GENERATE\n', (error) => {
+                error && this.eventEmitter.emit('error', error);
+            });
+        });
     }
     parseReply(data) {
         const sData = data.toString().trim();
@@ -124,6 +139,27 @@ class I2pSam {
             objResult[k.trim()] = v.trim();
         }
         return objResult;
+    }
+    async lookup(name) {
+        return new Promise((resolve, reject) => {
+            if (!/\.i2p$/.test(name)) {
+                reject(new Error('Invalid lookup name: ' + name));
+            }
+            this.eventEmitter.once('naming', resolve);
+            this.eventEmitter.once('error', reject);
+            this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error) => {
+                error && this.eventEmitter.emit('error', error);
+            });
+        });
+    }
+    me() {
+        return this.publicKey;
+    }
+    getKeyPair() {
+        return {
+            public: this.publicKey,
+            private: this.privateKey,
+        };
     }
 }
 exports.I2pSam = I2pSam;

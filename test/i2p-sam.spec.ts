@@ -26,6 +26,19 @@ class TestI2pSamBaseClass {
   @test
   @timeout(60000)
   @slow(30000)
+  async generateDestination() {
+    const sam = await I2PSAMRaw({
+      sam: { hostControl: '172.19.74.11', portControlTCP: 7656, portControlUDP: 7655 },
+    });
+
+    const pair = sam.getKeyPair();
+    expect(pair.public).not.to.be.empty;
+    expect(pair.private).not.to.be.empty;
+  }
+
+  @test
+  @timeout(60000)
+  @slow(30000)
   async lookup() {
     const sam = await I2PSAMRaw({
       sam: { hostControl: '172.19.74.11', portControlTCP: 7656, portControlUDP: 7655 },

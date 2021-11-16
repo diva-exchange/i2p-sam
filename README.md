@@ -48,6 +48,8 @@ type tSam = {
   portControlUDP: number;
   versionMin?: string;
   versionMax?: string;
+  publicKey?: string;
+  privateKey?: string;
   onError?: Function;
   onClose?: Function;
 };

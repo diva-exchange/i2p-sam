@@ -41,6 +41,8 @@ type tSam = {
   portControlUDP: number;
   versionMin?: string;
   versionMax?: string;
+  publicKey?: string;
+  privateKey?: string;
   onError?: Function;
   onClose?: Function;
 };
@@ -58,7 +60,9 @@ const DEFAULT_CONFIGURATION: Configuration = {
     port: 0,
     hostForward: '127.0.0.1',
     portForward: 0,
-    onError: () => {},
+    onError: (error: any) => {
+      throw new Error(error);
+    },
     onClose: () => {},
   },
   sam: {
@@ -67,7 +71,11 @@ const DEFAULT_CONFIGURATION: Configuration = {
     portControlUDP: 7655,
     versionMin: '',
     versionMax: '',
-    onError: () => {},
+    publicKey: '',
+    privateKey: '',
+    onError: (error: any) => {
+      throw new Error(error);
+    },
     onClose: () => {},
   },
 };

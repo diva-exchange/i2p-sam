@@ -21,7 +21,7 @@ import net from 'net';
 import { I2pSam } from './i2p-sam';
 import { Configuration } from './config';
 
-class I2pSamStream extends I2pSam {
+export class I2pSamStream extends I2pSam {
   private socketAccept: net.Socket; // incoming
 
   static async make(c: Configuration): Promise<I2pSamStream> {

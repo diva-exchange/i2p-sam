@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.I2pSamStream = void 0;
 const net_1 = __importDefault(require("net"));
 const i2p_sam_1 = require("./i2p-sam");
 class I2pSamStream extends i2p_sam_1.I2pSam {
@@ -44,3 +45,4 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
         this.config.listen.onMessage && this.config.listen.onMessage(data);
     }
 }
+exports.I2pSamStream = I2pSamStream;
