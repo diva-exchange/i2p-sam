@@ -19,7 +19,7 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2PSAMRaw } from '../src/i2p-sam-raw';
+import { I2pSamRaw, I2PSAMRaw } from '../src/i2p-sam-raw';
 
 @suite
 class TestI2pSamRaw {
@@ -32,7 +32,8 @@ class TestI2pSamRaw {
     const arrayPerformanceA: Array<number> = [];
     const arrayPerformanceB: Array<number> = [];
 
-    const i2pSender = await I2PSAMRaw({
+    console.log('Creating Sender...');
+    const i2pSender: I2pSamRaw = await I2PSAMRaw({
       listen: {
         address: '0.0.0.0',
         port: 20211,
@@ -45,7 +46,8 @@ class TestI2pSamRaw {
       sam: { hostControl: '172.19.74.11', portControlTCP: 7656, portControlUDP: 7655 },
     });
 
-    const i2pRecipient = await I2PSAMRaw({
+    console.log('Creating Recipient...');
+    const i2pRecipient: I2pSamRaw = await I2PSAMRaw({
       listen: {
         address: '0.0.0.0',
         port: 20212,

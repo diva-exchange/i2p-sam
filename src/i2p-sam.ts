@@ -21,10 +21,28 @@ import { EventEmitter } from 'events';
 import { Config, Configuration } from './config';
 import { Socket } from 'net';
 
+const REPLY_HELLO = 'HELLOREPLY';
+const REPLY_DEST = 'DESTREPLY';
+const REPLY_SESSION = 'SESSIONSTATUS';
+const REPLY_NAMING = 'NAMINGREPLY';
+const REPLY_STREAM = 'STREAMSTATUS';
+
+const KEY_RESULT = 'RESULT';
+const KEY_PUB = 'PUB';
+const KEY_PRIV = 'PRIV';
+const KEY_DESTINATION = 'DESTINATION';
+const KEY_VALUE = 'VALUE';
+
+const VALUE_OK = 'OK';
+
 export class I2pSam {
   protected config: Config;
   protected eventEmitter: EventEmitter;
   protected socketControl: Socket = {} as Socket;
+
+  // identity
+  protected publicKey: string = '';
+  protected privateKey: string = '';
 
   protected constructor(c: Configuration) {
     this.config = new Config(c);
@@ -93,50 +111,57 @@ export class I2pSam {
     });
   }
 
+  async generateDestination() {
+    this.publicKey = '';
+    this.privateKey = '';
+    this.socketControl.write('DEST GENERATE SIGNATURE_TYPE=EdDSA_SHA512_Ed25519\n');
+  }
+
+  me(): string {
+    return this.publicKey;
+  }
+
   private parseReply(data: Buffer) {
-    const [c, s, ...args] = data.toString().split(' ');
-
-    //@TODO this is.... ugly....
-    if (c + s === 'RAWRECEIVED') {
-      return;
-    }
-
-    // error handling
-    if (!args.includes('RESULT=OK')) {
-      //@FIXME logging
-      console.debug(data.toString());
-
-      return this.eventEmitter.emit('error', new Error('SAM command failed: ' + data.toString()));
-    }
+    const sData = data.toString().trim();
+    const [c, s] = sData.split(' ');
+    const oKeyValue = I2pSam.parseReplyKeyValue(sData);
 
     // command reply handling
     switch (c + s) {
-      case 'HELLOREPLY':
-        return this.eventEmitter.emit('hello');
-      case 'SESSIONSTATUS':
-        for (const s of args) {
-          const [k, v] = s.split('=');
-          if (k === 'DESTINATION') {
-            return this.eventEmitter.emit('session', v);
-          }
-        }
-        return this.eventEmitter.emit('error', new Error('SESSION failed: ' + data.toString()));
-      case 'NAMINGREPLY':
-        for (const s of args) {
-          const [k, v] = s.split('=');
-          if (k === 'VALUE') {
-            return this.eventEmitter.emit('naming', v);
-          }
-        }
-        return this.eventEmitter.emit('error', new Error('NAMING failed: ' + data.toString()));
-      case 'STREAMSTATUS':
-        return this.eventEmitter.emit('stream-status', args);
-      case 'STREAMACCEPT':
-        return this.eventEmitter.emit('stream-accept', args);
+      case REPLY_HELLO:
+        return oKeyValue[KEY_RESULT] === VALUE_OK
+          ? this.eventEmitter.emit('hello')
+          : this.eventEmitter.emit('error', new Error('HELLO failed: ' + sData));
+      case REPLY_DEST:
+        this.publicKey = oKeyValue[KEY_PUB] || '';
+        this.privateKey = oKeyValue[KEY_PRIV] || '';
+        return this.publicKey && this.privateKey
+          ? this.eventEmitter.emit('destination')
+          : this.eventEmitter.emit('error', new Error('DEST failed: ' + sData));
+      case REPLY_SESSION:
+        return oKeyValue[KEY_RESULT] === VALUE_OK && oKeyValue[KEY_DESTINATION]
+          ? this.eventEmitter.emit('session', oKeyValue[KEY_DESTINATION])
+          : this.eventEmitter.emit('error', new Error('SESSION failed: ' + sData));
+      case REPLY_NAMING:
+        return oKeyValue[KEY_RESULT] === VALUE_OK && oKeyValue[KEY_VALUE]
+          ? this.eventEmitter.emit('naming', oKeyValue[KEY_VALUE])
+          : this.eventEmitter.emit('error', new Error('NAMING failed: ' + sData));
+      case REPLY_STREAM:
+        //@FIXME connect and accept deliver back a stream status
+        this.eventEmitter.emit('stream-status', oKeyValue);
+        return this.eventEmitter.emit('stream-accept', oKeyValue);
       default:
-        //@FIXME logging
-        console.debug(data.toString());
-        return this.eventEmitter.emit('error', new Error('Unsupported SAM reply: ' + data.toString()));
+        return;
     }
+  }
+
+  private static parseReplyKeyValue(data: string): { [key: string]: string } {
+    const [...args] = data.toString().split(' ');
+    const objResult: { [key: string]: string } = {};
+    for (const s of args.filter((s) => s.indexOf('=') > -1)) {
+      const [k, v] = s.split('=');
+      objResult[k.trim()] = v.trim();
+    }
+    return objResult;
   }
 }

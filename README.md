@@ -5,12 +5,15 @@ An I2P SAM library. Useful to let applications communicate through the privacy-b
 ## Quick Start
 
 ### Using Streams (TCP)
+@TODO
+
+### Using Datagrams (UDP)
 
 ```
-const stream = await I2PSAMStream({
+const raw = await I2PSAMRaw({
   sam: {
-    host: 172.19.74.11,   # your local I2P SAM host
-    port: 7656            # your local I2P SAM port
+    host: 127.0.0.1,   # your local I2P SAM host
+    port: 7656         # your local I2P SAM port
   },
   listen: { 
     onMessage: (data: Buffer) => {
@@ -18,22 +21,7 @@ const stream = await I2PSAMStream({
     }
   }
 }); 
-stream.send('Hello World');
-```
-
-### Using Datagrams (UDP)
-
-```
-const raw = await I2PSAMRaw({
-  sam: {
-    host: 172.19.74.11,   # your local I2P SAM host
-    port: 7656            # your local I2P SAM port
-  },
-  listen: { 
-    onMessage: (data: Buffer) => { console.log(data.toString()); }
-  }
-}); 
-raw.send('Hello World');
+raw.send('diva.i2p', 'Hello DIVA');
 ```
 
 ### API

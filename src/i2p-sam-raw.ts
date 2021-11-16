@@ -21,12 +21,11 @@ import { I2pSam } from './i2p-sam';
 import { Configuration } from './config';
 import dgram, { Socket } from 'dgram';
 import base64url from 'base64url';
-import { compressSync, uncompressSync } from 'snappy';
+import { deflateRawSync, inflateRawSync } from 'zlib';
 
 export class I2pSamRaw extends I2pSam {
   private socketControlUDP: Socket = {} as Socket; // outgoing
   private socketListen: Socket = {} as Socket; // incoming
-  private localDestination: string = '';
 
   static async make(c: Configuration): Promise<I2pSamRaw> {
     const r = new I2pSamRaw(c);
@@ -38,11 +37,7 @@ export class I2pSamRaw extends I2pSam {
 
     this.socketControlUDP = dgram.createSocket({ type: 'udp4' });
     this.socketControlUDP.on('error', (error: Error) => {
-      if (this.config.sam.onError) {
-        this.config.sam.onError(error);
-      } else {
-        throw error;
-      }
+      this.config.sam.onError && this.config.sam.onError(error);
     });
 
     // no listener available
@@ -51,15 +46,17 @@ export class I2pSamRaw extends I2pSam {
     }
 
     this.socketListen = dgram.createSocket('udp4', (msg: Buffer) => {
-      this.config.listen.onMessage &&
-        this.config.listen.onMessage(uncompressSync(Buffer.from(base64url.decode(msg.toString(), 'hex'), 'hex')));
+      try {
+        this.config.listen.onMessage &&
+          this.config.listen.onMessage(
+            inflateRawSync(Buffer.from(base64url.decode(msg.toString(), 'binary'), 'binary'))
+          );
+      } catch (error) {
+        return;
+      }
     });
     this.socketListen.on('error', (error: Error) => {
-      if (this.config.listen.onError) {
-        this.config.listen.onError(error);
-      } else {
-        throw error;
-      }
+      this.config.listen.onError && this.config.listen.onError(error);
     });
     this.socketListen.on('close', () => {
       this.config.listen.onClose && this.config.listen.onClose();
@@ -79,23 +76,21 @@ export class I2pSamRaw extends I2pSam {
   private async initSession(): Promise<I2pSamRaw> {
     return new Promise((resolve, reject) => {
       this.eventEmitter.once('session', (destination: string) => {
-        this.localDestination = destination.trim();
+        this.publicKey = destination;
         resolve(this);
       });
       this.eventEmitter.once('error', reject);
+
+      const dest = this.privateKey || 'TRANSIENT';
       this.socketControl.write(
         'SESSION CREATE ' +
           'STYLE=RAW ' +
           `ID=${this.config.session.id} ` +
-          'DESTINATION=TRANSIENT ' +
+          `DESTINATION=${dest} ` +
           `PORT=${this.config.listen.portForward} ` +
           `HOST=${this.config.listen.hostForward}\n`
       );
     });
-  }
-
-  me(): string {
-    return this.localDestination;
   }
 
   async send(destination: string, msg: Buffer): Promise<void> {
@@ -104,13 +99,17 @@ export class I2pSamRaw extends I2pSam {
     }
 
     return new Promise((resolve, reject) => {
-      const s =
-        '3.0 ' +
-        `${this.config.session.id} ${destination}\n` +
-        base64url.encode(compressSync(msg).toString('hex'), 'hex');
-      this.socketControlUDP.send(s, this.config.sam.portControlUDP, this.config.sam.hostControl, (error) => {
-        error ? reject(error) : resolve();
-      });
+      const header = '3.0 ' + `${this.config.session.id} ${destination}\n`;
+      const payload = base64url.encode(deflateRawSync(msg).toString('binary'), 'binary');
+
+      this.socketControlUDP.send(
+        header + payload,
+        this.config.sam.portControlUDP,
+        this.config.sam.hostControl,
+        (error) => {
+          error ? reject(error) : resolve();
+        }
+      );
     });
   }
 }
