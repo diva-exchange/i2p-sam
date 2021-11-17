@@ -17,66 +17,79 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import net from 'net';
+import { Socket } from 'net';
 import { I2pSam } from './i2p-sam';
 import { Configuration } from './config';
 
 export class I2pSamStream extends I2pSam {
-  private socketAccept: net.Socket; // incoming
+  private socketStream: Socket = {} as Socket;
+  private destination: string = '';
+  private hasStream: boolean = false;
 
   static async make(c: Configuration): Promise<I2pSamStream> {
     const r = new I2pSamStream(c);
-    return await r.stream();
+    await r.open();
+    await r.initSession('STREAM');
+    await r.connect();
+    return r;
   }
 
-  private constructor(c: Configuration) {
-    super(c);
+  protected async open(): Promise<I2pSamStream> {
+    await super.open();
 
-    this.socketAccept = net.createConnection(
-      { host: this.config.sam.hostControl, port: this.config.sam.portControlTCP },
-      async () => {
-        await this.hello();
-        await this.accept();
+    this.socketStream = new Socket();
+    this.socketStream.on('data', (data: Buffer) => {
+      if (this.hasStream) {
+        this.config.stream.onMessage && this.config.stream.onMessage(data);
+      } else {
+        this.parseReply(data);
       }
-    );
-    this.socketAccept.on('error', (error: Error) => {
-      if (this.config.sam.onError) {
-        this.config.sam.onError(error);
+    });
+    this.socketStream.on('error', (error: Error) => {
+      if (this.config.stream.onError) {
+        this.config.stream.onError(error);
       } else {
         throw error;
       }
     });
-    this.socketAccept.on('data', (data: Buffer) => {
-      this.incoming(data);
+    this.socketStream.on('close', () => {
+      this.hasStream = false;
+      this.config.stream.onClose && this.config.stream.onClose();
     });
-    this.socketAccept.on('close', () => {
-      //@FIXME handle closing
-      console.log(`Connection to SAM (${this.config.sam.hostControl}:${this.config.sam.portControlTCP}) closed`);
+
+    await this.hello(this.socketStream);
+
+    return Promise.resolve(this);
+  }
+
+  private async connect(): Promise<void> {
+    // connect to the destination
+    this.destination = this.config.stream.destination || '';
+    if (!this.destination) {
+      throw new Error('Stream destination empty');
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
+        this.socketStream.write(s, (error) => {
+          error && reject(error);
+        });
+        this.eventEmitter.once('stream', () => {
+          this.hasStream = true;
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 
-  //@FIXME stub
-  private async stream(): Promise<I2pSamStream> {
-    this.socketControl.write(`SESSION CREATE STYLE=STREAM ID=${this.config.session.id} DESTINATION=TRANSIENT\n`);
-
-    //@FIXME wait for the SESSION result
-
-    return this;
-  }
-
-  //@FIXME stub
-  private async accept(): Promise<I2pSamStream> {
-    this.socketAccept.write(`SESSION ACCEPT ID=accept_${this.config.session.id}\n`);
-
-    //@FIXME wait for the SESSION result
-
-    return this;
-  }
-
-  //@FIXME stub
-  private incoming(data: Buffer) {
-    console.log(data.toString());
-
-    this.config.listen.onMessage && this.config.listen.onMessage(data);
+  send(msg: Buffer) {
+    this.socketStream.write(msg, (error) => {
+      if (error) {
+        throw error;
+      }
+    });
   }
 }

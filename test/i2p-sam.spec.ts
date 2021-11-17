@@ -19,7 +19,7 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2PSAMRaw } from '../i2psam';
+import { I2PSAMRaw } from '../src/i2psam';
 
 @suite
 class TestI2pSamBaseClass {
@@ -28,7 +28,7 @@ class TestI2pSamBaseClass {
   @slow(30000)
   async generateDestination() {
     const sam = await I2PSAMRaw({
-      sam: { hostControl: '172.19.74.11', portControlTCP: 7656, portControlUDP: 7655 },
+      sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },
     });
 
     const pair = sam.getKeyPair();
@@ -41,7 +41,7 @@ class TestI2pSamBaseClass {
   @slow(30000)
   async lookup() {
     const sam = await I2PSAMRaw({
-      sam: { hostControl: '172.19.74.11', portControlTCP: 7656, portControlUDP: 7655 },
+      sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },
     });
 
     const s: string = await sam.lookup('diva.i2p');
@@ -62,9 +62,9 @@ class TestI2pSamBaseClass {
     try {
       await I2PSAMRaw({
         sam: {
-          hostControl: '172.19.74.11',
-          portControlTCP: 7656,
-          portControlUDP: 7655,
+          host: '172.19.74.11',
+          portTCP: 7656,
+          portUDP: 7655,
           versionMin: '9.0',
           versionMax: '0.0',
         },

@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.I2pSamRaw = void 0;
 const i2p_sam_1 = require("./i2p-sam");
 const dgram_1 = __importDefault(require("dgram"));
-const base64url_1 = __importDefault(require("base64url"));
 const zlib_1 = require("zlib");
 class I2pSamRaw extends i2p_sam_1.I2pSam {
     constructor() {
@@ -30,14 +29,19 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
         this.socketListen = dgram_1.default.createSocket('udp4', (msg) => {
             try {
                 this.config.listen.onMessage &&
-                    this.config.listen.onMessage((0, zlib_1.inflateRawSync)(Buffer.from(base64url_1.default.decode(msg.toString(), 'binary'), 'binary')));
+                    this.config.listen.onMessage((0, zlib_1.inflateRawSync)(Buffer.from(msg.toString(), 'base64')));
             }
             catch (error) {
                 return;
             }
         });
         this.socketListen.on('error', (error) => {
-            this.config.listen.onError && this.config.listen.onError(error);
+            if (this.config.listen.onError) {
+                this.config.listen.onError(error);
+            }
+            else {
+                throw error;
+            }
         });
         this.socketListen.on('close', () => {
             this.config.listen.onClose && this.config.listen.onClose();
@@ -56,17 +60,17 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
     async initSession() {
         return super.initSession('RAW');
     }
-    async send(destination, msg) {
-        if (/\.i2p$/.test(destination)) {
-            destination = await this.lookup(destination);
-        }
-        return new Promise((resolve, reject) => {
-            const header = '3.0 ' + `${this.config.session.id} ${destination}\n`;
-            const payload = base64url_1.default.encode((0, zlib_1.deflateRawSync)(msg).toString('binary'), 'binary');
-            this.socketControlUDP.send(header + payload, this.config.sam.portControlUDP, this.config.sam.hostControl, (error) => {
-                error ? reject(error) : resolve();
+    send(destination, msg) {
+        (async (destination, msg) => {
+            if (/\.i2p$/.test(destination)) {
+                destination = await this.lookup(destination);
+            }
+            this.socketControlUDP.send(`3.0 ${this.config.session.id} ${destination}\n` + (0, zlib_1.deflateRawSync)(msg).toString('base64'), this.config.sam.portUDP, this.config.sam.host, (error) => {
+                if (error) {
+                    throw error;
+                }
             });
-        });
+        })(destination, msg);
     }
 }
 exports.I2pSamRaw = I2pSamRaw;

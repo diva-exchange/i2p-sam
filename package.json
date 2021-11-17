@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "main": "dist/i2psam.js",
   "files": [
@@ -19,16 +19,16 @@
     "url": "https://codeberg.org/diva.exchange/i2p-sam.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && npm i && tsc",
     "clean": "rm -rf dist/*",
     "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
-    "test": "TS_NODE_PROJECT=./test/tsconfig.json NODE_ENV=test LOG_LEVEL=trace nyc mocha"
+    "test": "npm run lint && TS_NODE_PROJECT=./test/tsconfig.json NODE_ENV=test nyc mocha",
+    "prepublishOnly": "npm run test && npm run clean && npm run build"
   },
   "engines": {
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "base64url": "^3.0.1",
     "nanoid": "^3.1.30"
   },
   "devDependencies": {
@@ -38,15 +38,14 @@
     "@types/chai": "^4.2.22",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.7",
-    "@typescript-eslint/eslint-plugin": "^5.3.1",
-    "@typescript-eslint/parser": "^5.3.1",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
     "chai": "^4.3.4",
     "eslint": "^8.2.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
     "mocha": "^9.1.3",
     "nyc": "^15.1.0",
-    "pino-pretty": "^7.2.0",
     "prettier": "^2.4.1",
     "source-map": "^0.7.3",
     "source-map-support": "^0.5.20",

@@ -28,10 +28,9 @@ class TestConfig {
   default() {
     const c = new Config({} as Configuration);
     expect(c.session.id).is.not.empty;
+    expect(c.stream.onError).to.throw();
     expect(c.listen.onError).to.throw();
-    expect(c.listen.onClose && c.listen.onClose()).to.be.undefined;
     expect(c.sam.onError).to.throw();
-    expect(c.sam.onClose && c.sam.onClose()).to.be.undefined;
   }
 
   @test
@@ -45,7 +44,7 @@ class TestConfig {
 
   @test
   sessionInvalidPort() {
-    const c1 = new Config({ listen: { port: 0 } } as Configuration);
+    const c1 = new Config({ listen: { port: -1 } } as Configuration);
     expect(c1.listen.port).eq(0);
 
     const c2 = new Config({ listen: { port: 1 } } as Configuration);
@@ -53,5 +52,8 @@ class TestConfig {
 
     const c3 = new Config({ listen: { port: 65536 } } as Configuration);
     expect(c3.listen.port).eq(65535);
+
+    const c4 = new Config({ sam: { portUDP: -1 } } as Configuration);
+    expect(c4.sam.portUDP).eq(0);
   }
 }

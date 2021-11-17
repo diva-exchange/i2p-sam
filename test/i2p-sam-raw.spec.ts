@@ -19,7 +19,7 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2PSAMRaw } from '../i2psam';
+import { I2PSAMRaw } from '../src/i2psam';
 import { I2pSamRaw } from '../src/i2p-sam-raw';
 
 @suite
@@ -44,7 +44,7 @@ class TestI2pSamRaw {
           arrayPerformanceA.push(Date.now() - Number(msg.toString()));
         },
       },
-      sam: { hostControl: '172.19.74.11', portControlTCP: 7656, portControlUDP: 7655 },
+      sam: { host: '172.19.74.11', portTCP: 7656 },
     });
 
     console.log('Creating Recipient...');
@@ -58,22 +58,22 @@ class TestI2pSamRaw {
           arrayPerformanceB.push(Date.now() - Number(msg.toString()));
         },
       },
-      sam: { hostControl: '172.19.74.12', portControlTCP: 7656, portControlUDP: 7655 },
+      sam: { host: '172.19.74.12', portTCP: 7656 },
     });
 
     console.log('Start sending data...');
 
     // send some data to diva.i2p
-    await i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
+    i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
 
     const publicKey1 = i2pRecipient.getPublicKey();
     setInterval(async () => {
-      await i2pSender.send(publicKey1, Buffer.from(Date.now().toString()));
+      i2pSender.send(publicKey1, Buffer.from(Date.now().toString()));
     }, 1000);
 
     const publicKey2 = i2pSender.getPublicKey();
     setInterval(async () => {
-      await i2pRecipient.send(publicKey2, Buffer.from(Date.now().toString()));
+      i2pRecipient.send(publicKey2, Buffer.from(Date.now().toString()));
     }, 1000);
 
     await TestI2pSamRaw.wait(60000);

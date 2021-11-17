@@ -20,7 +20,6 @@
 import { I2pSam } from './i2p-sam';
 import { Configuration } from './config';
 import dgram, { Socket } from 'dgram';
-import base64url from 'base64url';
 import { deflateRawSync, inflateRawSync } from 'zlib';
 
 export class I2pSamRaw extends I2pSam {
@@ -48,15 +47,17 @@ export class I2pSamRaw extends I2pSam {
     this.socketListen = dgram.createSocket('udp4', (msg: Buffer) => {
       try {
         this.config.listen.onMessage &&
-          this.config.listen.onMessage(
-            inflateRawSync(Buffer.from(base64url.decode(msg.toString(), 'binary'), 'binary'))
-          );
+          this.config.listen.onMessage(inflateRawSync(Buffer.from(msg.toString(), 'base64')));
       } catch (error) {
         return;
       }
     });
     this.socketListen.on('error', (error: Error) => {
-      this.config.listen.onError && this.config.listen.onError(error);
+      if (this.config.listen.onError) {
+        this.config.listen.onError(error);
+      } else {
+        throw error;
+      }
     });
     this.socketListen.on('close', () => {
       this.config.listen.onClose && this.config.listen.onClose();
@@ -77,24 +78,22 @@ export class I2pSamRaw extends I2pSam {
     return super.initSession('RAW');
   }
 
-  async send(destination: string, msg: Buffer): Promise<void> {
-    //@TODO implement caching... maybe
-    if (/\.i2p$/.test(destination)) {
-      destination = await this.lookup(destination);
-    }
-
-    return new Promise((resolve, reject) => {
-      const header = '3.0 ' + `${this.config.session.id} ${destination}\n`;
-      const payload = base64url.encode(deflateRawSync(msg).toString('binary'), 'binary');
+  send(destination: string, msg: Buffer) {
+    (async (destination: string, msg: Buffer) => {
+      if (/\.i2p$/.test(destination)) {
+        destination = await this.lookup(destination);
+      }
 
       this.socketControlUDP.send(
-        header + payload,
-        this.config.sam.portControlUDP,
-        this.config.sam.hostControl,
+        `3.0 ${this.config.session.id} ${destination}\n` + deflateRawSync(msg).toString('base64'),
+        this.config.sam.portUDP,
+        this.config.sam.host,
         (error) => {
-          error ? reject(error) : resolve();
+          if (error) {
+            throw error;
+          }
         }
       );
-    });
+    })(destination, msg);
   }
 }

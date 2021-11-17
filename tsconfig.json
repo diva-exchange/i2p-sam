@@ -1,6 +1,8 @@
 {
   "extends": "@tsconfig/node14/tsconfig.json",
   "compilerOptions": {
+    "declaration": true,
+    "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2018",
     "strictNullChecks": true,
@@ -12,8 +14,7 @@
     "removeComments": true,
     "sourceMap": false
   },
-  "include": [
-    "i2psam.ts",
-    "src/**/*"
+  "files": [
+    "src/i2psam.ts"
   ]
 }

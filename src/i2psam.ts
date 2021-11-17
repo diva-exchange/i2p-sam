@@ -17,14 +17,14 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import { Configuration } from './src/config';
-import { I2pSamStream } from './src/i2p-sam-stream';
-import { I2pSamRaw } from './src/i2p-sam-raw';
+import { Configuration } from './config';
+import { I2pSamStream } from './i2p-sam-stream';
+import { I2pSamRaw } from './i2p-sam-raw';
 
-export const I2PSAMStream = async (c: Configuration = {} as Configuration) => {
+export const I2PSAMStream = async (c: Configuration) => {
   return I2pSamStream.make(c);
 };
 
-export const I2PSAMRaw = async (c: Configuration = {} as Configuration) => {
+export const I2PSAMRaw = async (c: Configuration) => {
   return I2pSamRaw.make(c);
 };

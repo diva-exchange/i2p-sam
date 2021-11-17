@@ -25,9 +25,16 @@ type tSession = {
   id?: string;
 };
 
+type tStream = {
+  destination: string;
+  onMessage?: Function;
+  onError?: Function;
+  onClose?: Function;
+};
+
 type tListen = {
-  address?: string;
-  port?: number;
+  address: string;
+  port: number;
   hostForward?: string;
   portForward?: number;
   onMessage?: Function;
@@ -36,9 +43,9 @@ type tListen = {
 };
 
 type tSam = {
-  hostControl: string;
-  portControlTCP: number;
-  portControlUDP: number;
+  host: string;
+  portTCP: number;
+  portUDP?: number;
   versionMin?: string;
   versionMax?: string;
   publicKey?: string;
@@ -49,26 +56,41 @@ type tSam = {
 
 export type Configuration = {
   session?: tSession;
+  stream?: tStream;
   listen?: tListen;
+  sam?: tSam;
+};
+
+type ConfigurationDefault = {
+  session: tSession;
+  stream: tStream;
+  listen: tListen;
   sam: tSam;
 };
 
-const DEFAULT_CONFIGURATION: Configuration = {
-  session: { id: '' },
+const DEFAULT_CONFIGURATION: ConfigurationDefault = {
+  session: {
+    id: '',
+  },
+  stream: {
+    destination: '',
+    onError: (error: any) => {
+      throw new Error(error);
+    },
+  },
   listen: {
     address: '127.0.0.1',
     port: 0,
-    hostForward: '127.0.0.1',
+    hostForward: '',
     portForward: 0,
     onError: (error: any) => {
       throw new Error(error);
     },
-    onClose: () => {},
   },
   sam: {
-    hostControl: '127.0.0.1',
-    portControlTCP: 7656,
-    portControlUDP: 7655,
+    host: '127.0.0.1',
+    portTCP: 7656,
+    portUDP: 7655,
     versionMin: '',
     versionMax: '',
     publicKey: '',
@@ -76,25 +98,27 @@ const DEFAULT_CONFIGURATION: Configuration = {
     onError: (error: any) => {
       throw new Error(error);
     },
-    onClose: () => {},
   },
 };
 
 export class Config {
   public session: tSession;
+  public stream: tStream;
   public listen: tListen;
   public sam: tSam;
 
   constructor(c: Configuration) {
     this.session = { ...DEFAULT_CONFIGURATION.session, ...(c.session || {}) };
     this.session.id = this.session.id || nanoid(DEFAULT_LENGTH_SESSION);
+    this.stream = { ...DEFAULT_CONFIGURATION.stream, ...(c.stream || {}) };
     this.listen = { ...DEFAULT_CONFIGURATION.listen, ...(c.listen || {}) };
     this.listen.port = Number(this.listen.port) > 0 ? Config.port(Number(this.listen.port)) : 0;
+    this.listen.hostForward = this.listen.hostForward || this.listen.address;
     this.listen.portForward =
       Number(this.listen.portForward) > 0 ? Config.port(Number(this.listen.portForward)) : this.listen.port;
     this.sam = { ...DEFAULT_CONFIGURATION.sam, ...(c.sam || {}) };
-    this.sam.portControlTCP = Config.port(this.sam.portControlTCP);
-    this.sam.portControlUDP = Config.port(this.sam.portControlUDP);
+    this.sam.portTCP = Config.port(this.sam.portTCP);
+    this.sam.portUDP = Number(this.sam.portUDP) > 0 ? Config.port(Number(this.sam.portUDP)) : 0;
   }
 
   private static b(n: any, min: number, max: number): number {

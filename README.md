@@ -2,67 +2,98 @@
 
 An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a "privacy-by-design" network.
 
-To get I2P quickly up and running please take a look at this project: https://codeberg.org/diva.exchange/i2p
+To get I2P up and running, take a look at the project: https://codeberg.org/diva.exchange/i2p
 
-## Quick Start
+## Get Started
+
+### How to Use Streams (TCP)
+
+Send an HTTP GET request to diva.i2p:
+```
+(async () => {
+  (
+    await I2PSAMStream({
+      stream: {
+        destination: 'diva.i2p',
+        onMessage: (data: Buffer) => {
+          console.log('Incoming Data: ' + data.toString());
+        },
+      },
+      sam: {
+        host: 127.0.0.1,            # your local I2P SAM host
+        portTCP: 7656               # your local I2P SAM port
+      },
+    })
+  ).send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+})();
+```
 
 ### How to Use Datagrams (UDP)
 
 Send messages from peer A to peer B:
 
 ```
-// instantiate Peer A
-const peerA = await I2PSAMRaw({
-  sam: {
-    host: 127.0.0.1,     # your local I2P SAM host
-    port: 7656           # your local I2P SAM port
-  }
-}); 
-
-// instantiate Peer B
-const peerB = await I2PSAMRaw({
-  sam: {
-    host: 127.0.0.1,     # your local I2P SAM host
-    port: 7656           # your local I2P SAM port
-  },
-  listen: { 
-    address: 127.0.0.1,  # udp listener
-    port: 20202,         # udp listener
-    onMessage: (data: Buffer) => {
-      console.log('Incoming Data: ' + data.toString());
+(async () => {
+  // instantiate Peer A
+  const peerA = await I2PSAMRaw({
+    sam: {
+      host: 127.0.0.1,            # your local I2P SAM host
+      portTCP: 7656               # your local I2P SAM port
     }
-  }
-}); 
-
-// send 500 messages via UDP, every 500ms
-// IMPORTANT: UDP is by design not reliable. Some messages might get lost.
-const msg: string = 'Hello Peer B - I am Peer A';
-await new Promise((resolve) => {
-  let t = 0;
-  const i = setInterval(async () => {
-    await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
-    if (t++ >= 500) {
-      clearInterval(i);
-      resolve(true);
+  }); 
+  
+  // instantiate Peer B
+  const peerB = await I2PSAMRaw({
+    sam: {
+      host: 127.0.0.1,            # your local I2P SAM host
+      portTCP: 7656               # your local I2P SAM port
+    },
+    listen: { 
+      address: 127.0.0.1,         # udp listener
+      port: 20202,                # udp listener
+      onMessage: (data: Buffer) => {
+        console.log('Incoming Data: ' + data.toString());
+      }
     }
-  }, 500);
-});
+  }); 
+  
+  // send 500 messages via UDP, every 500ms
+  // IMPORTANT: UDP is not reliable. Some messages might get lost.
+  const msg: string = 'Hello Peer B - I am Peer A';
+  await new Promise((resolve) => {
+    let t = 0;
+    const i = setInterval(async () => {
+      await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+      if (t++ >= 500) {
+        clearInterval(i);
+        resolve(true);
+      }
+    }, 500);
+  });
+})();
 ```
-
-### Using Streams (TCP)
-@TODO
 
 ## API
 
-### lookup(name: string): Promise\<string\>
+### Base Class
 
-### getPublicKey(): string
+#### lookup(name: string): Promise\<string\>
 
-### getPrivateKey(): string
+#### getPublicKey(): string
 
-### getKeyPair(): { public: string, private: string }
+#### getPrivateKey(): string
 
-### send(destination: string, msg: Buffer): Promise\<void\>
+#### getKeyPair(): { public: string, private: string }
+
+
+### I2PSAMStream
+
+#### send(msg: Buffer)
+
+
+### I2PSAMRaw
+
+#### send(destination: string, msg: Buffer)
 
 
 ### Configuration / Options
@@ -71,20 +102,27 @@ type tSession = {
   id?: string;
 };
 
+type tStream = {
+  destination: string;
+  onMessage?: Function;
+  onError?: Function;
+  onClose?: Function;
+};
+
 type tListen = {
-  address?: string;
-  port?: number;
-  hostForward?: string;
-  portForward?: number;
+  address: string;          # default 127.0.0.1
+  port: number;             # default 0
+  hostForward?: string;     # default [address]
+  portForward?: number;     # default [port]
   onMessage?: Function;
   onError?: Function;
   onClose?: Function;
 };
 
 type tSam = {
-  hostControl: string;
-  portControlTCP: number;
-  portControlUDP: number;
+  host: string;             # default 127.0.0.1
+  portTCP: number;          # default 7656
+  portUDP?: number;         # default 7655
   versionMin?: string;
   versionMax?: string;
   publicKey?: string;
@@ -95,16 +133,11 @@ type tSam = {
 
 export type Configuration = {
   session?: tSession;
+  stream?: tStream;
   listen?: tListen;
-  sam: tSam;
+  sam?: tSam;
 };
 ```
-
-#### lookup(destination: string)
-@TODO
-
-#### send(msg: Buffer)
-@TODO
 
 ## How to Run Unit Tests
 
