@@ -19,14 +19,14 @@
     "url": "https://codeberg.org/diva.exchange/i2p-sam.git"
   },
   "scripts": {
-    "build": "npm run clean && npm i && tsc",
+    "build": "npm run clean && npm i && tsc && npm run lint",
     "clean": "rm -rf dist/*",
     "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
     "test": "npm run lint && TS_NODE_PROJECT=./test/tsconfig.json NODE_ENV=test nyc mocha",
-    "prepublishOnly": "npm run test && npm run clean && npm run build"
+    "prepublishOnly": "npm run build"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=12.0.0"
   },
   "dependencies": {
     "nanoid": "^3.1.30"
