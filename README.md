@@ -1,15 +1,19 @@
 # I2P SAM
 
-An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a "privacy-by-design" network.
+An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a secure "privacy-by-design" network.
 
 To get I2P up and running, take a look at the project: https://codeberg.org/diva.exchange/i2p
 
 ## Get Started
 
+`npm i @diva.exchange/i2psam`
+
 ### How to Use Streams (TCP)
 
 Send an HTTP GET request to diva.i2p:
 ```
+import { I2PSAMStream } from '@diva.exchange/i2psam';
+
 (async () => {
   (
     await I2PSAMStream({
@@ -33,6 +37,8 @@ Send an HTTP GET request to diva.i2p:
 Send messages from peer A to peer B:
 
 ```
+import { I2PSAMRaw } from '@diva.exchange/i2psam';
+
 (async () => {
   // instantiate Peer A
   const peerA = await I2PSAMRaw({
@@ -147,17 +153,17 @@ Prepare the test environment by creating three docker container:
 docker-compose -f test/sam.diva.i2p.yml up -d
 ```
 
-Check wether the I2P test nodes are properly running by accessing the local consoles running on: http://172.19.74.11:7070, http://172.19.74.12:7070 or http://172.19.74.13:7070
+Check wether the I2P test node is properly running by accessing the local console on: http://172.19.74.11:7070.
 
-To modify the IP addresses of the local consoles, adapt the file `test/sam.diva.i2p.yml`.
+To modify the IP address of the local console, adapt the file `test/sam.diva.i2p.yml`.
 
-After the docker containers are running for two or three minutes (reason: the I2P network needs some minutes to build), execute the unit tests:
+After the docker container is running for two or three minutes (reason: the I2P network needs some minutes to build), execute the unit tests:
 
 ```
 npm run test
 ```
 
-Stop all container (and purge all data within):
+Stop the container (and purge all data within):
 ```
 docker-compose -f test/sam.diva.i2p.yml down --volumes
 ```

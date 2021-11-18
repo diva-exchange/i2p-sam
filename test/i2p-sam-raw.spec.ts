@@ -25,7 +25,7 @@ import { I2pSamRaw } from '../src/i2p-sam-raw';
 @suite
 class TestI2pSamRaw {
   @test
-  @timeout(160000)
+  @timeout(120000)
   @slow(120000)
   async send() {
     let messageCounterA = 0;
@@ -33,8 +33,11 @@ class TestI2pSamRaw {
     const arrayPerformanceA: Array<number> = [];
     const arrayPerformanceB: Array<number> = [];
 
+    let publicKeySender = '';
+    let publicKeyRecipient = '';
+
     console.log('Creating Sender...');
-    const i2pSender: I2pSamRaw = await I2PSAMRaw({
+    I2PSAMRaw({
       listen: {
         address: '0.0.0.0',
         port: 20211,
@@ -45,10 +48,19 @@ class TestI2pSamRaw {
         },
       },
       sam: { host: '172.19.74.11', portTCP: 7656 },
+    }).then((i2pSender: I2pSamRaw) => {
+      publicKeySender = i2pSender.getPublicKey();
+
+      // send some data to diva.i2p
+      i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
+
+      setInterval(async () => {
+        publicKeyRecipient && i2pSender.send(publicKeyRecipient, Buffer.from(Date.now().toString()));
+      }, 1000);
     });
 
     console.log('Creating Recipient...');
-    const i2pRecipient: I2pSamRaw = await I2PSAMRaw({
+    I2PSAMRaw({
       listen: {
         address: '0.0.0.0',
         port: 20212,
@@ -58,25 +70,20 @@ class TestI2pSamRaw {
           arrayPerformanceB.push(Date.now() - Number(msg.toString()));
         },
       },
-      sam: { host: '172.19.74.12', portTCP: 7656 },
+      sam: { host: '172.19.74.11', portTCP: 7656 },
+    }).then((i2pRecipient: I2pSamRaw) => {
+      publicKeyRecipient = i2pRecipient.getPublicKey();
+
+      setInterval(async () => {
+        publicKeySender && i2pRecipient.send(publicKeySender, Buffer.from(Date.now().toString()));
+      }, 1000);
     });
 
     console.log('Start sending data...');
 
-    // send some data to diva.i2p
-    i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
-
-    const publicKey1 = i2pRecipient.getPublicKey();
-    setInterval(async () => {
-      i2pSender.send(publicKey1, Buffer.from(Date.now().toString()));
-    }, 1000);
-
-    const publicKey2 = i2pSender.getPublicKey();
-    setInterval(async () => {
-      i2pRecipient.send(publicKey2, Buffer.from(Date.now().toString()));
-    }, 1000);
-
-    await TestI2pSamRaw.wait(60000);
+    while (messageCounterA < 10 || messageCounterB < 10) {
+      await TestI2pSamRaw.wait(1000);
+    }
 
     console.log('messageCounterA ' + messageCounterA);
     console.log(arrayPerformanceA);

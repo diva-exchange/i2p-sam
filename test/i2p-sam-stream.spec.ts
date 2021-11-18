@@ -45,7 +45,9 @@ class TestI2pSamStream {
 
     // send some data to diva.i2p
     i2pSender.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
-    await TestI2pSamStream.wait(30000);
+    while (!messageCounter) {
+      await TestI2pSamStream.wait(1000);
+    }
 
     expect(messageCounter).not.to.be.equal(0);
   }

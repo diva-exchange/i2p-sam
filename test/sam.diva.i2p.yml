@@ -19,44 +19,18 @@
 
 version: "3.7"
 services:
-  a.sam.diva.i2p:
-    container_name: a.sam.diva.i2p
+  sam.diva.i2p:
+    container_name: sam.diva.i2p
     image: divax/i2p:latest
     restart: unless-stopped
     environment:
       ENABLE_SAM: 1
       BANDWIDTH: P
     volumes:
-      - a.sam.diva.i2p:/home/i2pd/
+      - sam.diva.i2p:/home/i2pd/
     networks:
       network.sam.diva.i2p:
         ipv4_address: 172.19.74.11
-
-  b.sam.diva.i2p:
-    container_name: b.sam.diva.i2p
-    image: divax/i2p:latest
-    restart: unless-stopped
-    environment:
-      ENABLE_SAM: 1
-      BANDWIDTH: P
-    volumes:
-      - b.sam.diva.i2p:/home/i2pd/
-    networks:
-      network.sam.diva.i2p:
-        ipv4_address: 172.19.74.12
-
-  c.sam.diva.i2p:
-    container_name: c.sam.diva.i2p
-    image: divax/i2p:latest
-    restart: unless-stopped
-    environment:
-      ENABLE_SAM: 1
-      BANDWIDTH: P
-    volumes:
-      - c.sam.diva.i2p:/home/i2pd/
-    networks:
-      network.sam.diva.i2p:
-        ipv4_address: 172.19.74.13
 
 networks:
   network.sam.diva.i2p:
@@ -67,9 +41,5 @@ networks:
         - subnet: 172.19.74.0/24
 
 volumes:
-  a.sam.diva.i2p:
-    name: a.sam.diva.i2p
-  b.sam.diva.i2p:
-    name: b.sam.diva.i2p
-  c.sam.diva.i2p:
-    name: c.sam.diva.i2p
+  sam.diva.i2p:
+    name: sam.diva.i2p
