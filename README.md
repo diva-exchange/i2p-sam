@@ -193,7 +193,7 @@ BTC: 3Ebuzhsbs6DrUQuwvMu722LhD8cNfhG1gs
 
 Awesome, thank you!
 
-##References
+## References
 
 I2Pd, see https://i2pd.readthedocs.io/
 
