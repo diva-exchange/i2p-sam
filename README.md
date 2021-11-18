@@ -199,4 +199,4 @@ I2Pd, see https://i2pd.readthedocs.io/
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://codeberg.org/diva.exchange/i2p-sam/src/branch/main/LICENSE)
