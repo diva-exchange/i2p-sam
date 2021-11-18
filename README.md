@@ -6,13 +6,13 @@ To get I2P up and running, take a look at the project: https://codeberg.org/diva
 
 ## Get Started
 
-`npm i @diva.exchange/i2psam`
+`npm i @diva.exchange/i2p-sam`
 
 ### How to Use Streams (TCP)
 
 Send an HTTP GET request to diva.i2p:
 ```
-import { I2PSAMStream } from '@diva.exchange/i2psam';
+import { I2PSAMStream } from '@diva.exchange/i2p-sam';
 
 (async () => {
   (
@@ -37,7 +37,7 @@ import { I2PSAMStream } from '@diva.exchange/i2psam';
 Send messages from peer A to peer B:
 
 ```
-import { I2PSAMRaw } from '@diva.exchange/i2psam';
+import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
 
 (async () => {
   // instantiate Peer A
