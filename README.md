@@ -210,7 +210,13 @@ export type Configuration = {
 
 ## How to Run Unit Tests
 
-Prepare the test environment by creating three docker container:
+Assumptions: 
+1. git, node and npm is available. 
+2. docker and docker-compose is available. 
+
+Clone the source code from git `git clone https://codeberg.org/diva.exchange/i2p-sam.git` and enter the folder `i2p-sam`.
+
+Prepare the test environment by creating the docker container:
 
 ```
 docker-compose -f test/sam.diva.i2p.yml up -d
@@ -220,11 +226,12 @@ Check whether the I2P test node is properly running by accessing the local conso
 
 To modify the IP address of the local console, adapt the file `test/sam.diva.i2p.yml`.
 
-After the docker container is running for two or three minutes (reason: the I2P network needs some minutes to build), execute the unit tests:
+After the docker container is running for two or three minutes (reason: the I2P network needs some minutes to integrate), execute the unit tests:
 
 ```
 npm run test
 ```
+Executing the unit tests will take a few minutes. Reason: the communication via I2P gets tested - which is the purpose of this library.
 
 Stop the container (and purge all data within):
 ```
