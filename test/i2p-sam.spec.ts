@@ -33,8 +33,8 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  @timeout(60000)
-  @slow(50000)
+  @timeout(120000)
+  @slow(120000)
   async generateDestination() {
     const sam = await I2PSAMRaw({
       sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },
@@ -46,8 +46,8 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  @timeout(60000)
-  @slow(50000)
+  @timeout(120000)
+  @slow(120000)
   async lookup() {
     const sam = await I2PSAMRaw({
       sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },

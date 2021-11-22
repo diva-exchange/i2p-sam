@@ -25,8 +25,8 @@ import { I2pSamStream } from '../src/i2p-sam-stream';
 @suite
 class TestI2pSamStream {
   @test
-  @timeout(90000)
-  @slow(90000)
+  @timeout(120000)
+  @slow(120000)
   async send() {
     let messageCounter = 0;
 
