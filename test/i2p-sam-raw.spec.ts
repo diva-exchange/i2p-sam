@@ -49,7 +49,7 @@ class TestI2pSamRaw {
       },
       sam: { host: '172.19.74.11', portTCP: 7656 },
     }).then((i2pSender: I2pSamRaw) => {
-      destinationSender = i2pSender.getLocalDestination();
+      destinationSender = i2pSender.getPublicKey();
 
       // send some data to diva.i2p
       i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
@@ -72,7 +72,7 @@ class TestI2pSamRaw {
       },
       sam: { host: '172.19.74.11', portTCP: 7656 },
     }).then((i2pRecipient: I2pSamRaw) => {
-      destinationRecipient = i2pRecipient.getLocalDestination();
+      destinationRecipient = i2pRecipient.getPublicKey();
 
       setInterval(async () => {
         destinationSender && i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));

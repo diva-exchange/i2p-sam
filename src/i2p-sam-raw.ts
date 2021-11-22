@@ -28,7 +28,9 @@ export class I2pSamRaw extends I2pSam {
 
   static async make(c: Configuration): Promise<I2pSamRaw> {
     const r = new I2pSamRaw(c);
-    return await (await r.open()).initSession();
+    await r.open();
+    await r.initSession();
+    return r;
   }
 
   protected async open(): Promise<I2pSamRaw> {

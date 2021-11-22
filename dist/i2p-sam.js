@@ -75,10 +75,7 @@ class I2pSam {
             this.eventEmitter.removeAllListeners('error');
             this.eventEmitter.once('error', reject);
             this.eventEmitter.removeAllListeners('session');
-            this.eventEmitter.once('session', (localDestination) => {
-                this.localDestination = localDestination;
-                resolve(this);
-            });
+            this.eventEmitter.once('session', () => { resolve(this); });
             this.socketControl.write(s, (error) => {
                 error && this.eventEmitter.emit('error', error);
             });
@@ -100,9 +97,10 @@ class I2pSam {
                     ? this.eventEmitter.emit('error', new Error('DEST failed: ' + sData))
                     : this.eventEmitter.emit('destination');
             case REPLY_SESSION:
-                return oKeyValue[KEY_RESULT] !== VALUE_OK
+                this.localDestination = oKeyValue[KEY_DESTINATION] || '';
+                return oKeyValue[KEY_RESULT] !== VALUE_OK || !this.localDestination
                     ? this.eventEmitter.emit('error', new Error('SESSION failed: ' + sData))
-                    : this.eventEmitter.emit('session', oKeyValue[KEY_DESTINATION]);
+                    : this.eventEmitter.emit('session');
             case REPLY_NAMING:
                 return oKeyValue[KEY_RESULT] !== VALUE_OK
                     ? this.eventEmitter.emit('error', new Error('NAMING failed: ' + sData))

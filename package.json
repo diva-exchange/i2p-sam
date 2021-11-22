@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "main": "dist/index.js",
   "keywords": [
@@ -21,7 +21,7 @@
     "url": "https://codeberg.org/diva.exchange/i2p-sam/issues"
   },
   "scripts": {
-    "build": "npm run clean && npm ci && tsc && npm run lint",
+    "build": "npm run clean && npm i && tsc && npm run lint",
     "clean": "rm -rf dist/*",
     "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
     "test": "TS_NODE_PROJECT=./test/tsconfig.json NODE_ENV=test nyc mocha",
