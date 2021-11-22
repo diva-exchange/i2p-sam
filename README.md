@@ -94,7 +94,26 @@ I2PSAMRaw({
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
   }
-}).lookup('diva.i2p').then((dest) => console.log(dest));
+})
+  .then((sam) => 
+    sam.lookup('diva.i2p')
+      .then((dest) => console.log(dest))
+  );
+```
+
+#### getLocalDestination(): string
+
+Example: 
+
+```
+import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
+
+I2PSAMRaw({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}).then((sam) => console.log(sam.getLocalDestination()));
 ```
 
 #### getPublicKey(): string
@@ -109,7 +128,7 @@ I2PSAMStream({
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
   }
-}).getPublicKey();
+}).then((sam) => console.log(sam.getPublicKey()));
 ```
 
 #### getPrivateKey(): string
@@ -124,7 +143,7 @@ I2PSAMRaw({
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
   }
-}).getPrivateKey();
+}).then((sam) => console.log(sam.getPrivateKey()));
 ```
 
 #### getKeyPair(): { public: string, private: string }
@@ -139,7 +158,7 @@ I2PSAMStream({
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
   }
-}).getKeyPair();
+}).then((sam) => console.log(sam.getKeyPair()));
 ```
 
 #### static toB32(destination: string): string
