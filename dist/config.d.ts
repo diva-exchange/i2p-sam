@@ -4,7 +4,6 @@ declare type tSession = {
 declare type tStream = {
   destination: string;
   onMessage?: Function;
-  onError?: Function;
   onClose?: Function;
 };
 declare type tListen = {
@@ -13,7 +12,6 @@ declare type tListen = {
   hostForward?: string;
   portForward?: number;
   onMessage?: Function;
-  onError?: Function;
   onClose?: Function;
 };
 declare type tSam = {
@@ -24,7 +22,6 @@ declare type tSam = {
   versionMax?: string;
   publicKey?: string;
   privateKey?: string;
-  onError?: Function;
   onClose?: Function;
 };
 export declare type Configuration = {

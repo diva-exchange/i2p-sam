@@ -8,31 +8,30 @@ To get I2P up and running, take a look at the project: https://codeberg.org/diva
 
 `npm i @diva.exchange/i2p-sam`
 
-### How to Use Streams (TCP)
+### How to Use Streams
 
-Send an HTTP GET request to diva.i2p:
+Send an HTTP GET request to diva.i2p and output the response:
+
 ```
 import { I2PSAMStream } from '@diva.exchange/i2p-sam';
 
-(async () => {
-  (
-    await I2PSAMStream({
-      stream: {
-        destination: 'diva.i2p',
-        onMessage: (data: Buffer) => {
-          console.log('Incoming Data: ' + data.toString());
-        },
-      },
-      sam: {
-        host: 127.0.0.1,            # your local I2P SAM host
-        portTCP: 7656               # your local I2P SAM port
-      },
-    })
-  ).send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
-})();
+I2PSAMStream({
+  stream: {
+    destination: 'diva.i2p',
+    onMessage: (data: Buffer) => {
+      console.log('Incoming Data: ' + data.toString());
+    },
+  },
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  },
+}).then((i2psam) => {
+  i2psam.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+});
 ```
 
-### How to Use Datagrams (UDP)
+### How to Use Datagrams
 
 Send messages from peer A to peer B:
 
@@ -85,22 +84,89 @@ import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
 
 #### lookup(name: string): Promise\<string\>
 
+Example: 
+
+```
+import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
+
+I2PSAMRaw({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}).lookup('diva.i2p').then((dest) => console.log(dest));
+```
+
 #### getPublicKey(): string
+
+Example: 
+
+```
+import { I2PSAMStream } from '@diva.exchange/i2p-sam';
+
+I2PSAMStream({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}).getPublicKey();
+```
 
 #### getPrivateKey(): string
 
+Example: 
+
+```
+import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
+
+I2PSAMRaw({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}).getPrivateKey();
+```
+
 #### getKeyPair(): { public: string, private: string }
+
+Example: 
+
+```
+import { I2PSAMStream } from '@diva.exchange/i2p-sam';
+
+I2PSAMStream({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}).getKeyPair();
+```
+
+#### static toB32(destination: string): string
+
+Example: 
+
+```
+import { toB32 } from '@diva.exchange/i2p-sam';
+
+console.log(
+  toB32('[some base64-encoded destination]');
+);
+```
 
 
 ### I2PSAMStream
 
 #### send(msg: Buffer)
 
+Example: see the [Streams example](#How to Use Streams) above. 
+
 
 ### I2PSAMRaw
 
 #### send(destination: string, msg: Buffer)
 
+Example: see [Datagram example](#How to Use Datagrams) above. 
 
 ### Configuration / Options
 ```
@@ -111,7 +177,6 @@ type tSession = {
 type tStream = {
   destination: string;
   onMessage?: Function;
-  onError?: Function;
   onClose?: Function;
 };
 
@@ -121,7 +186,6 @@ type tListen = {
   hostForward?: string;     # default [address]
   portForward?: number;     # default [port]
   onMessage?: Function;
-  onError?: Function;
   onClose?: Function;
 };
 
@@ -133,7 +197,6 @@ type tSam = {
   versionMax?: string;
   publicKey?: string;
   privateKey?: string;
-  onError?: Function;
   onClose?: Function;
 };
 
@@ -153,7 +216,7 @@ Prepare the test environment by creating three docker container:
 docker-compose -f test/sam.diva.i2p.yml up -d
 ```
 
-Check wether the I2P test node is properly running by accessing the local console on: http://172.19.74.11:7070.
+Check whether the I2P test node is properly running by accessing the local console on: http://172.19.74.11:7070.
 
 To modify the IP address of the local console, adapt the file `test/sam.diva.i2p.yml`.
 

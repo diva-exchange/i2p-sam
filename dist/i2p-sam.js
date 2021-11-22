@@ -1,6 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.I2pSam = void 0;
+const rfc4648_1 = require("rfc4648");
+const crypto_1 = __importDefault(require("crypto"));
 const events_1 = require("events");
 const config_1 = require("./config");
 const net_1 = require("net");
@@ -22,10 +27,6 @@ class I2pSam {
         this.privateKey = '';
         this.config = new config_1.Config(c);
         this.eventEmitter = new events_1.EventEmitter();
-        this.eventEmitter.on('error', (error) => {
-            console.debug(error);
-            throw error;
-        });
     }
     async open() {
         this.socketControl = new net_1.Socket();
@@ -33,12 +34,7 @@ class I2pSam {
             this.parseReply(data);
         });
         this.socketControl.on('error', (error) => {
-            if (this.config.sam.onError) {
-                this.config.sam.onError(error);
-            }
-            else {
-                throw error;
-            }
+            this.eventEmitter.emit('error', error);
         });
         this.socketControl.on('close', () => {
             this.config.sam.onClose && this.config.sam.onClose();
@@ -53,17 +49,15 @@ class I2pSam {
         return new Promise((resolve, reject) => {
             const min = this.config.sam.versionMin || false;
             const max = this.config.sam.versionMax || false;
-            try {
-                socket.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
-                    socket.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
-                        error && reject(error);
-                    });
+            this.eventEmitter.removeAllListeners('error');
+            this.eventEmitter.once('error', reject);
+            this.eventEmitter.removeAllListeners('hello');
+            this.eventEmitter.once('hello', resolve);
+            socket.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
+                socket.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
+                    error && this.eventEmitter.emit('error', error);
                 });
-                this.eventEmitter.once('hello', resolve);
-            }
-            catch (error) {
-                reject(error);
-            }
+            });
         });
     }
     async initSession(type) {
@@ -77,18 +71,16 @@ class I2pSam {
                     s += `STYLE=RAW PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}\n`;
                     break;
             }
-            try {
-                this.socketControl.write(s, (error) => {
-                    error && reject(error);
-                });
-                this.eventEmitter.once('session', (destination) => {
-                    this.publicKey = destination;
-                    resolve(this);
-                });
-            }
-            catch (error) {
-                reject(error);
-            }
+            this.eventEmitter.removeAllListeners('error');
+            this.eventEmitter.once('error', reject);
+            this.eventEmitter.removeAllListeners('session');
+            this.eventEmitter.once('session', (destination) => {
+                this.publicKey = destination;
+                resolve(this);
+            });
+            this.socketControl.write(s, (error) => {
+                error && this.eventEmitter.emit('error', error);
+            });
         });
     }
     parseReply(data) {
@@ -98,7 +90,7 @@ class I2pSam {
         switch (c + s) {
             case REPLY_HELLO:
                 return oKeyValue[KEY_RESULT] !== VALUE_OK
-                    ? this.eventEmitter.emit('error', new Error('DEST failed: ' + sData))
+                    ? this.eventEmitter.emit('error', new Error('HELLO failed: ' + sData))
                     : this.eventEmitter.emit('hello');
             case REPLY_DEST:
                 this.publicKey = oKeyValue[KEY_PUB] || '';
@@ -135,15 +127,13 @@ class I2pSam {
         this.publicKey = '';
         this.privateKey = '';
         return new Promise((resolve, reject) => {
-            try {
-                this.socketControl.write('DEST GENERATE\n', (error) => {
-                    error && reject(error);
-                });
-                this.eventEmitter.once('destination', resolve);
-            }
-            catch (error) {
-                reject(error);
-            }
+            this.eventEmitter.removeAllListeners('error');
+            this.eventEmitter.once('error', reject);
+            this.eventEmitter.removeAllListeners('destination');
+            this.eventEmitter.once('destination', resolve);
+            this.socketControl.write('DEST GENERATE\n', (error) => {
+                error && this.eventEmitter.emit('error', error);
+            });
         });
     }
     async lookup(name) {
@@ -151,15 +141,13 @@ class I2pSam {
             if (!/\.i2p$/.test(name)) {
                 reject(new Error('Invalid lookup name: ' + name));
             }
-            try {
-                this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error) => {
-                    error && reject(error);
-                });
-                this.eventEmitter.once('naming', resolve);
-            }
-            catch (error) {
-                reject(error);
-            }
+            this.eventEmitter.removeAllListeners('error');
+            this.eventEmitter.once('error', reject);
+            this.eventEmitter.removeAllListeners('naming');
+            this.eventEmitter.once('naming', resolve);
+            this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error) => {
+                error && this.eventEmitter.emit('error', error);
+            });
         });
     }
     getPublicKey() {
@@ -173,6 +161,10 @@ class I2pSam {
             public: this.getPublicKey(),
             private: this.getPrivateKey(),
         };
+    }
+    static toB32(base64Destination) {
+        const s = Buffer.from(base64Destination.replace(/-/g, '+').replace(/~/g, '/'), 'base64');
+        return rfc4648_1.base32.stringify(crypto_1.default.createHash('sha256').update(s).digest(), { pad: false }).toLowerCase();
     }
 }
 exports.I2pSam = I2pSam;

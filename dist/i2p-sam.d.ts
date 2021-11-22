@@ -22,4 +22,5 @@ export declare class I2pSam {
     public: string;
     private: string;
   };
+  static toB32(base64Destination: string): string;
 }

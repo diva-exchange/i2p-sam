@@ -20,6 +20,7 @@
 import { Configuration } from './config';
 import { I2pSamStream } from './i2p-sam-stream';
 import { I2pSamRaw } from './i2p-sam-raw';
+import { I2pSam } from './i2p-sam';
 
 export const I2PSAMStream = async (c: Configuration) => {
   return I2pSamStream.make(c);
@@ -27,4 +28,8 @@ export const I2PSAMStream = async (c: Configuration) => {
 
 export const I2PSAMRaw = async (c: Configuration) => {
   return I2pSamRaw.make(c);
+};
+
+export const toB32 = (s: string) => {
+  return I2pSam.toB32(s);
 };

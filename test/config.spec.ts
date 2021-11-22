@@ -28,9 +28,6 @@ class TestConfig {
   default() {
     const c = new Config({} as Configuration);
     expect(c.session.id).is.not.empty;
-    expect(c.stream.onError).to.throw();
-    expect(c.listen.onError).to.throw();
-    expect(c.sam.onError).to.throw();
   }
 
   @test

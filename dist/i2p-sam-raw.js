@@ -21,7 +21,7 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
         await super.open();
         this.socketControlUDP = dgram_1.default.createSocket({ type: 'udp4' });
         this.socketControlUDP.on('error', (error) => {
-            this.config.sam.onError && this.config.sam.onError(error);
+            this.eventEmitter.emit('error', error);
         });
         if (!(this.config.listen.port || 0)) {
             return Promise.resolve(this);
@@ -36,12 +36,7 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
             }
         });
         this.socketListen.on('error', (error) => {
-            if (this.config.listen.onError) {
-                this.config.listen.onError(error);
-            }
-            else {
-                throw error;
-            }
+            this.eventEmitter.emit('error', error);
         });
         this.socketListen.on('close', () => {
             this.config.listen.onClose && this.config.listen.onClose();
@@ -66,9 +61,7 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
                 destination = await this.lookup(destination);
             }
             this.socketControlUDP.send(`3.0 ${this.config.session.id} ${destination}\n` + (0, zlib_1.deflateRawSync)(msg).toString('base64'), this.config.sam.portUDP, this.config.sam.host, (error) => {
-                if (error) {
-                    throw error;
-                }
+                error && this.eventEmitter.emit('error', error);
             });
         })(destination, msg);
     }

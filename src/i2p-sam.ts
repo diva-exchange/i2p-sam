@@ -17,6 +17,8 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
+import { base32 } from 'rfc4648';
+import crypto from 'crypto';
 import { EventEmitter } from 'events';
 import { Config, Configuration } from './config';
 import { Socket } from 'net';
@@ -47,11 +49,6 @@ export class I2pSam {
   protected constructor(c: Configuration) {
     this.config = new Config(c);
     this.eventEmitter = new EventEmitter();
-    this.eventEmitter.on('error', (error) => {
-      //@FIXME logging
-      console.debug(error);
-      throw error;
-    });
   }
 
   protected async open(): Promise<any> {
@@ -60,11 +57,7 @@ export class I2pSam {
       this.parseReply(data);
     });
     this.socketControl.on('error', (error: Error) => {
-      if (this.config.sam.onError) {
-        this.config.sam.onError(error);
-      } else {
-        throw error;
-      }
+      this.eventEmitter.emit('error', error);
     });
     this.socketControl.on('close', () => {
       this.config.sam.onClose && this.config.sam.onClose();
@@ -83,16 +76,16 @@ export class I2pSam {
       const min = this.config.sam.versionMin || false;
       const max = this.config.sam.versionMax || false;
 
-      try {
-        socket.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
-          socket.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
-            error && reject(error);
-          });
+      this.eventEmitter.removeAllListeners('error');
+      this.eventEmitter.once('error', reject);
+      this.eventEmitter.removeAllListeners('hello');
+      this.eventEmitter.once('hello', resolve);
+
+      socket.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
+        socket.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
+          error && this.eventEmitter.emit('error', error);
         });
-        this.eventEmitter.once('hello', resolve);
-      } catch (error) {
-        reject(error);
-      }
+      });
     });
   }
 
@@ -108,17 +101,17 @@ export class I2pSam {
           break;
       }
 
-      try {
-        this.socketControl.write(s, (error) => {
-          error && reject(error);
-        });
-        this.eventEmitter.once('session', (destination: string) => {
-          this.publicKey = destination;
-          resolve(this);
-        });
-      } catch (error) {
-        reject(error);
-      }
+      this.eventEmitter.removeAllListeners('error');
+      this.eventEmitter.once('error', reject);
+      this.eventEmitter.removeAllListeners('session');
+      this.eventEmitter.once('session', (destination: string) => {
+        this.publicKey = destination;
+        resolve(this);
+      });
+
+      this.socketControl.write(s, (error) => {
+        error && this.eventEmitter.emit('error', error);
+      });
     });
   }
 
@@ -131,7 +124,7 @@ export class I2pSam {
     switch (c + s) {
       case REPLY_HELLO:
         return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.eventEmitter.emit('error', new Error('DEST failed: ' + sData))
+          ? this.eventEmitter.emit('error', new Error('HELLO failed: ' + sData))
           : this.eventEmitter.emit('hello');
       case REPLY_DEST:
         this.publicKey = oKeyValue[KEY_PUB] || '';
@@ -170,31 +163,31 @@ export class I2pSam {
     this.publicKey = '';
     this.privateKey = '';
     return new Promise((resolve, reject) => {
-      try {
-        this.socketControl.write('DEST GENERATE\n', (error) => {
-          error && reject(error);
-        });
-        this.eventEmitter.once('destination', resolve);
-      } catch (error) {
-        reject(error);
-      }
+      this.eventEmitter.removeAllListeners('error');
+      this.eventEmitter.once('error', reject);
+      this.eventEmitter.removeAllListeners('destination');
+      this.eventEmitter.once('destination', resolve);
+
+      this.socketControl.write('DEST GENERATE\n', (error) => {
+        error && this.eventEmitter.emit('error', error);
+      });
     });
   }
 
-  //@TODO implement caching
   async lookup(name: string): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!/\.i2p$/.test(name)) {
         reject(new Error('Invalid lookup name: ' + name));
       }
-      try {
-        this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error) => {
-          error && reject(error);
-        });
-        this.eventEmitter.once('naming', resolve);
-      } catch (error) {
-        reject(error);
-      }
+
+      this.eventEmitter.removeAllListeners('error');
+      this.eventEmitter.once('error', reject);
+      this.eventEmitter.removeAllListeners('naming');
+      this.eventEmitter.once('naming', resolve);
+
+      this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error) => {
+        error && this.eventEmitter.emit('error', error);
+      });
     });
   }
 
@@ -211,5 +204,10 @@ export class I2pSam {
       public: this.getPublicKey(),
       private: this.getPrivateKey(),
     };
+  }
+
+  static toB32(base64Destination: string): string {
+    const s: Buffer = Buffer.from(base64Destination.replace(/-/g, '+').replace(/~/g, '/'), 'base64');
+    return base32.stringify(crypto.createHash('sha256').update(s).digest(), { pad: false }).toLowerCase();
   }
 }

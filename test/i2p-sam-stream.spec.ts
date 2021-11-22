@@ -19,7 +19,7 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2PSAMStream } from '../src/i2psam';
+import { I2PSAMStream } from '../src';
 import { I2pSamStream } from '../src/i2p-sam-stream';
 
 @suite

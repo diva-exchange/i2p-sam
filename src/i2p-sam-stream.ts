@@ -46,11 +46,7 @@ export class I2pSamStream extends I2pSam {
       }
     });
     this.socketStream.on('error', (error: Error) => {
-      if (this.config.stream.onError) {
-        this.config.stream.onError(error);
-      } else {
-        throw error;
-      }
+      this.eventEmitter.emit('error', error);
     });
     this.socketStream.on('close', () => {
       this.hasStream = false;
@@ -70,26 +66,24 @@ export class I2pSamStream extends I2pSam {
     }
 
     return new Promise((resolve, reject) => {
-      try {
-        const s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
-        this.socketStream.write(s, (error) => {
-          error && reject(error);
-        });
-        this.eventEmitter.once('stream', () => {
-          this.hasStream = true;
-          resolve();
-        });
-      } catch (error) {
-        reject(error);
-      }
+      this.eventEmitter.removeAllListeners('error');
+      this.eventEmitter.once('error', reject);
+      this.eventEmitter.removeAllListeners('stream');
+      this.eventEmitter.once('stream', () => {
+        this.hasStream = true;
+        resolve();
+      });
+
+      const s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
+      this.socketStream.write(s, (error) => {
+        error && this.eventEmitter.emit('error', error);
+      });
     });
   }
 
   send(msg: Buffer) {
     this.socketStream.write(msg, (error) => {
-      if (error) {
-        throw error;
-      }
+      error && this.eventEmitter.emit('error', error);
     });
   }
 }

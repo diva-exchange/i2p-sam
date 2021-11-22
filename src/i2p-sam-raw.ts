@@ -36,7 +36,7 @@ export class I2pSamRaw extends I2pSam {
 
     this.socketControlUDP = dgram.createSocket({ type: 'udp4' });
     this.socketControlUDP.on('error', (error: Error) => {
-      this.config.sam.onError && this.config.sam.onError(error);
+      this.eventEmitter.emit('error', error);
     });
 
     // no listener available
@@ -53,11 +53,7 @@ export class I2pSamRaw extends I2pSam {
       }
     });
     this.socketListen.on('error', (error: Error) => {
-      if (this.config.listen.onError) {
-        this.config.listen.onError(error);
-      } else {
-        throw error;
-      }
+      this.eventEmitter.emit('error', error);
     });
     this.socketListen.on('close', () => {
       this.config.listen.onClose && this.config.listen.onClose();
@@ -89,9 +85,7 @@ export class I2pSamRaw extends I2pSam {
         this.config.sam.portUDP,
         this.config.sam.host,
         (error) => {
-          if (error) {
-            throw error;
-          }
+          error && this.eventEmitter.emit('error', error);
         }
       );
     })(destination, msg);

@@ -9,18 +9,12 @@ const DEFAULT_CONFIGURATION = {
     },
     stream: {
         destination: '',
-        onError: (error) => {
-            throw new Error(error);
-        },
     },
     listen: {
         address: '127.0.0.1',
         port: 0,
         hostForward: '',
         portForward: 0,
-        onError: (error) => {
-            throw new Error(error);
-        },
     },
     sam: {
         host: '127.0.0.1',
@@ -30,9 +24,6 @@ const DEFAULT_CONFIGURATION = {
         versionMax: '',
         publicKey: '',
         privateKey: '',
-        onError: (error) => {
-            throw new Error(error);
-        },
     },
 };
 class Config {

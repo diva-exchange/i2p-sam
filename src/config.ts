@@ -28,7 +28,6 @@ type tSession = {
 type tStream = {
   destination: string;
   onMessage?: Function;
-  onError?: Function;
   onClose?: Function;
 };
 
@@ -38,7 +37,6 @@ type tListen = {
   hostForward?: string;
   portForward?: number;
   onMessage?: Function;
-  onError?: Function;
   onClose?: Function;
 };
 
@@ -50,7 +48,6 @@ type tSam = {
   versionMax?: string;
   publicKey?: string;
   privateKey?: string;
-  onError?: Function;
   onClose?: Function;
 };
 
@@ -74,18 +71,12 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
-    onError: (error: any) => {
-      throw new Error(error);
-    },
   },
   listen: {
     address: '127.0.0.1',
     port: 0,
     hostForward: '',
     portForward: 0,
-    onError: (error: any) => {
-      throw new Error(error);
-    },
   },
   sam: {
     host: '127.0.0.1',
@@ -95,9 +86,6 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
     versionMax: '',
     publicKey: '',
     privateKey: '',
-    onError: (error: any) => {
-      throw new Error(error);
-    },
   },
 };
 
