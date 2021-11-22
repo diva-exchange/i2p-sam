@@ -20,6 +20,7 @@
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import { I2PSAMRaw, toB32 } from '../src';
+import { I2pSam } from '../src/i2p-sam';
 
 @suite
 class TestI2pSamBaseClass {
@@ -36,7 +37,7 @@ class TestI2pSamBaseClass {
   @timeout(120000)
   @slow(120000)
   async generateDestination() {
-    const sam = await I2PSAMRaw({
+    const sam: I2pSam = await I2PSAMRaw({
       sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },
     });
 

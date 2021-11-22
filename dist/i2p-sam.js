@@ -17,7 +17,6 @@ const REPLY_STREAM = 'STREAMSTATUS';
 const KEY_RESULT = 'RESULT';
 const KEY_PUB = 'PUB';
 const KEY_PRIV = 'PRIV';
-const KEY_DESTINATION = 'DESTINATION';
 const KEY_VALUE = 'VALUE';
 const VALUE_OK = 'OK';
 class I2pSam {
@@ -74,10 +73,7 @@ class I2pSam {
             this.eventEmitter.removeAllListeners('error');
             this.eventEmitter.once('error', reject);
             this.eventEmitter.removeAllListeners('session');
-            this.eventEmitter.once('session', (destination) => {
-                this.publicKey = destination;
-                resolve(this);
-            });
+            this.eventEmitter.once('session', resolve);
             this.socketControl.write(s, (error) => {
                 error && this.eventEmitter.emit('error', error);
             });
@@ -101,7 +97,7 @@ class I2pSam {
             case REPLY_SESSION:
                 return oKeyValue[KEY_RESULT] !== VALUE_OK
                     ? this.eventEmitter.emit('error', new Error('SESSION failed: ' + sData))
-                    : this.eventEmitter.emit('session', oKeyValue[KEY_DESTINATION]);
+                    : this.eventEmitter.emit('session');
             case REPLY_NAMING:
                 return oKeyValue[KEY_RESULT] !== VALUE_OK
                     ? this.eventEmitter.emit('error', new Error('NAMING failed: ' + sData))
@@ -115,7 +111,7 @@ class I2pSam {
         }
     }
     static parseReplyKeyValue(data) {
-        const [...args] = data.toString().split(' ');
+        const [...args] = data.split(' ');
         const objResult = {};
         for (const s of args.filter((s) => s.indexOf('=') > -1)) {
             const [k, v] = s.split('=');
