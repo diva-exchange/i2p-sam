@@ -159,14 +159,14 @@ console.log(
 
 #### send(msg: Buffer)
 
-Example: see the [Streams example](#How to Use Streams) above. 
+Example: see the _Get Started: How to Use Streams_ above. 
 
 
 ### I2PSAMRaw
 
 #### send(destination: string, msg: Buffer)
 
-Example: see [Datagram example](#How to Use Datagrams) above. 
+Example: see _Get Started: How to Use Datagrams_ above. 
 
 ### Configuration / Options
 ```
