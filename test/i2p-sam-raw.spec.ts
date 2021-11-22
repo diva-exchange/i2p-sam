@@ -33,8 +33,8 @@ class TestI2pSamRaw {
     const arrayPerformanceA: Array<number> = [];
     const arrayPerformanceB: Array<number> = [];
 
-    let publicKeySender = '';
-    let publicKeyRecipient = '';
+    let destinationSender = '';
+    let destinationRecipient = '';
 
     console.log('Creating Sender...');
     I2PSAMRaw({
@@ -49,13 +49,13 @@ class TestI2pSamRaw {
       },
       sam: { host: '172.19.74.11', portTCP: 7656 },
     }).then((i2pSender: I2pSamRaw) => {
-      publicKeySender = i2pSender.getPublicKey();
+      destinationSender = i2pSender.getLocalDestination();
 
       // send some data to diva.i2p
       i2pSender.send('diva.i2p', Buffer.from(Date.now().toString()));
 
       setInterval(async () => {
-        publicKeyRecipient && i2pSender.send(publicKeyRecipient, Buffer.from(Date.now().toString()));
+        destinationRecipient && i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
       }, 1000);
     });
 
@@ -72,10 +72,10 @@ class TestI2pSamRaw {
       },
       sam: { host: '172.19.74.11', portTCP: 7656 },
     }).then((i2pRecipient: I2pSamRaw) => {
-      publicKeyRecipient = i2pRecipient.getPublicKey();
+      destinationRecipient = i2pRecipient.getLocalDestination();
 
       setInterval(async () => {
-        publicKeySender && i2pRecipient.send(publicKeySender, Buffer.from(Date.now().toString()));
+        destinationSender && i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));
       }, 1000);
     });
 

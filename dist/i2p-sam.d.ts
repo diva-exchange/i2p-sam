@@ -6,8 +6,9 @@ export declare class I2pSam {
   protected config: Config;
   protected eventEmitter: EventEmitter;
   protected socketControl: Socket;
-  protected publicKey: string;
-  protected privateKey: string;
+  private localDestination;
+  private publicKey;
+  private privateKey;
   protected constructor(c: Configuration);
   protected open(): Promise<any>;
   protected hello(socket: Socket): Promise<void>;
@@ -16,6 +17,7 @@ export declare class I2pSam {
   private static parseReplyKeyValue;
   private generateDestination;
   lookup(name: string): Promise<string>;
+  getLocalDestination(): string;
   getPublicKey(): string;
   getPrivateKey(): string;
   getKeyPair(): {
