@@ -23,7 +23,6 @@ const VALUE_OK = 'OK';
 class I2pSam {
     constructor(c) {
         this.socketControl = {};
-        this.localDestination = '';
         this.publicKey = '';
         this.privateKey = '';
         this.config = new config_1.Config(c);
@@ -75,7 +74,9 @@ class I2pSam {
             this.eventEmitter.removeAllListeners('error');
             this.eventEmitter.once('error', reject);
             this.eventEmitter.removeAllListeners('session');
-            this.eventEmitter.once('session', () => { resolve(this); });
+            this.eventEmitter.once('session', () => {
+                resolve(this);
+            });
             this.socketControl.write(s, (error) => {
                 error && this.eventEmitter.emit('error', error);
             });
@@ -97,8 +98,7 @@ class I2pSam {
                     ? this.eventEmitter.emit('error', new Error('DEST failed: ' + sData))
                     : this.eventEmitter.emit('destination');
             case REPLY_SESSION:
-                this.localDestination = oKeyValue[KEY_DESTINATION] || '';
-                return oKeyValue[KEY_RESULT] !== VALUE_OK || !this.localDestination
+                return oKeyValue[KEY_RESULT] !== VALUE_OK || !(oKeyValue[KEY_DESTINATION] || '')
                     ? this.eventEmitter.emit('error', new Error('SESSION failed: ' + sData))
                     : this.eventEmitter.emit('session');
             case REPLY_NAMING:
@@ -150,7 +150,10 @@ class I2pSam {
         });
     }
     getLocalDestination() {
-        return this.localDestination;
+        return this.publicKey;
+    }
+    getLocalDestinationAsB32Address() {
+        return I2pSam.toB32(this.publicKey) + '.b32.i2p';
     }
     getPublicKey() {
         return this.publicKey;

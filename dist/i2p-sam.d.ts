@@ -6,7 +6,6 @@ export declare class I2pSam {
   protected config: Config;
   protected eventEmitter: EventEmitter;
   protected socketControl: Socket;
-  private localDestination;
   private publicKey;
   private privateKey;
   protected constructor(c: Configuration);
@@ -18,6 +17,7 @@ export declare class I2pSam {
   private generateDestination;
   lookup(name: string): Promise<string>;
   getLocalDestination(): string;
+  getLocalDestinationAsB32Address(): string;
   getPublicKey(): string;
   getPrivateKey(): string;
   getKeyPair(): {
