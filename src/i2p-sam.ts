@@ -43,7 +43,6 @@ export class I2pSam {
   protected socketControl: Socket = {} as Socket;
 
   // identity
-  private localDestination: string = '';
   private publicKey: string = '';
   private privateKey: string = '';
 
@@ -133,8 +132,7 @@ export class I2pSam {
           ? this.eventEmitter.emit('error', new Error('DEST failed: ' + sData))
           : this.eventEmitter.emit('destination');
       case REPLY_SESSION:
-        this.localDestination = oKeyValue[KEY_DESTINATION] || '';
-        return oKeyValue[KEY_RESULT] !== VALUE_OK || !this.localDestination
+        return oKeyValue[KEY_RESULT] !== VALUE_OK || !(oKeyValue[KEY_DESTINATION] || '')
           ? this.eventEmitter.emit('error', new Error('SESSION failed: ' + sData))
           : this.eventEmitter.emit('session');
       case REPLY_NAMING:
@@ -193,7 +191,11 @@ export class I2pSam {
   }
 
   getLocalDestination(): string {
-    return this.localDestination;
+    return this.publicKey;
+  }
+
+  getLocalDestinationAsB32Address(): string {
+    return I2pSam.toB32(this.publicKey) + '.b32.i2p';
   }
 
   getPublicKey(): string {

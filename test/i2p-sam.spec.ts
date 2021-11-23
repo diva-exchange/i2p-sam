@@ -44,7 +44,8 @@ class TestI2pSamBaseClass {
     const pair = sam.getKeyPair();
     expect(pair.public).to.be.eq(sam.getPublicKey());
     expect(pair.private).to.be.eq(sam.getPrivateKey());
-    expect(sam.getLocalDestination()).not.to.be.empty;
+    expect(sam.getLocalDestination()).to.be.eq(pair.public);
+    expect(sam.getLocalDestinationAsB32Address()).not.to.be.empty;
   }
 
   @test
