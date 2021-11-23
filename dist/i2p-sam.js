@@ -135,10 +135,10 @@ class I2pSam {
             });
         });
     }
-    async lookup(name) {
+    async resolve(name) {
         return new Promise((resolve, reject) => {
             if (!/\.i2p$/.test(name)) {
-                reject(new Error('Invalid lookup name: ' + name));
+                reject(new Error('Invalid I2P address: ' + name));
             }
             this.eventEmitter.removeAllListeners('error');
             this.eventEmitter.once('error', reject);
@@ -170,6 +170,16 @@ class I2pSam {
     static toB32(base64Destination) {
         const s = Buffer.from(base64Destination.replace(/-/g, '+').replace(/~/g, '/'), 'base64');
         return rfc4648_1.base32.stringify(crypto_1.default.createHash('sha256').update(s).digest(), { pad: false }).toLowerCase();
+    }
+    static async createLocalDestination(c) {
+        const sam = new I2pSam(c);
+        await sam.open();
+        return { address: sam.getLocalDestinationAsB32Address(), public: sam.getPublicKey(), private: sam.getPrivateKey() };
+    }
+    static async lookup(c, address) {
+        const sam = new I2pSam(c);
+        await sam.open();
+        return await sam.resolve(address);
     }
 }
 exports.I2pSam = I2pSam;

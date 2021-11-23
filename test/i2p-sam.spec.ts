@@ -19,8 +19,12 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2PSAMRaw, toB32 } from '../src';
+import { I2PSAMRaw, toB32, createLocalDestination, lookup } from '../src';
 import { I2pSamRaw } from '../src/i2p-sam-raw';
+
+const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
+const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP || 7656);
+const SAM_PORT_UDP = Number(process.env.SAM_PORT_UDP || 7655);
 
 @suite
 class TestI2pSamBaseClass {
@@ -34,11 +38,22 @@ class TestI2pSamBaseClass {
   }
 
   @test
+  async createLocalDestination() {
+    const obj = await createLocalDestination({
+      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+    });
+
+    expect(obj.address).not.to.be.empty;
+    expect(obj.public).not.to.be.empty;
+    expect(obj.private).not.to.be.empty;
+  }
+
+  @test
   @timeout(120000)
   @slow(120000)
-  async generateDestination() {
+  async keys() {
     const sam: I2pSamRaw = await I2PSAMRaw({
-      sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },
+      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
     });
 
     const pair = sam.getKeyPair();
@@ -49,18 +64,12 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  @timeout(120000)
-  @slow(120000)
   async lookup() {
-    const sam: I2pSamRaw = await I2PSAMRaw({
-      sam: { host: '172.19.74.11', portTCP: 7656, portUDP: 7655 },
-    });
-
-    const s: string = await sam.lookup('diva.i2p');
+    const s: string = await lookup({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } }, 'diva.i2p');
     expect(s).not.to.be.empty;
 
     try {
-      await sam.lookup('diva.bogus');
+      await lookup({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } }, 'diva.bogus');
       expect(false).to.be.true;
     } catch (error) {
       expect(true).to.be.true;
@@ -74,9 +83,9 @@ class TestI2pSamBaseClass {
     try {
       await I2PSAMRaw({
         sam: {
-          host: '172.19.74.11',
-          portTCP: 7656,
-          portUDP: 7655,
+          host: SAM_HOST,
+          portTCP: SAM_PORT_TCP,
+          portUDP: SAM_PORT_UDP,
           versionMin: '9.0',
           versionMax: '0.0',
         },
@@ -91,8 +100,8 @@ class TestI2pSamBaseClass {
       await I2PSAMRaw({
         sam: {
           host: '127.0.0.256',
-          portTCP: 7656,
-          portUDP: 7655,
+          portTCP: SAM_PORT_TCP,
+          portUDP: SAM_PORT_UDP,
           versionMin: '9.0',
           versionMax: '0.0',
         },

@@ -79,7 +79,7 @@ export class I2pSamRaw extends I2pSam {
   send(destination: string, msg: Buffer) {
     (async (destination: string, msg: Buffer) => {
       if (/\.i2p$/.test(destination)) {
-        destination = await this.lookup(destination);
+        destination = await this.resolve(destination);
       }
 
       this.socketControlUDP.send(

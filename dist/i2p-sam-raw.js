@@ -60,7 +60,7 @@ class I2pSamRaw extends i2p_sam_1.I2pSam {
     send(destination, msg) {
         (async (destination, msg) => {
             if (/\.i2p$/.test(destination)) {
-                destination = await this.lookup(destination);
+                destination = await this.resolve(destination);
             }
             this.socketControlUDP.send(`3.0 ${this.config.session.id} ${destination}\n` + (0, zlib_1.deflateRawSync)(msg).toString('base64'), this.config.sam.portUDP, this.config.sam.host, (error) => {
                 error && this.eventEmitter.emit('error', error);

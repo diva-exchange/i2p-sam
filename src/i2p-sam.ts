@@ -173,10 +173,10 @@ export class I2pSam {
     });
   }
 
-  async lookup(name: string): Promise<string> {
+  async resolve(name: string): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!/\.i2p$/.test(name)) {
-        reject(new Error('Invalid lookup name: ' + name));
+        reject(new Error('Invalid I2P address: ' + name));
       }
 
       this.eventEmitter.removeAllListeners('error');
@@ -216,5 +216,17 @@ export class I2pSam {
   static toB32(base64Destination: string): string {
     const s: Buffer = Buffer.from(base64Destination.replace(/-/g, '+').replace(/~/g, '/'), 'base64');
     return base32.stringify(crypto.createHash('sha256').update(s).digest(), { pad: false }).toLowerCase();
+  }
+
+  static async createLocalDestination(c: Configuration): Promise<{ address: string; public: string; private: string }> {
+    const sam = new I2pSam(c);
+    await sam.open();
+    return { address: sam.getLocalDestinationAsB32Address(), public: sam.getPublicKey(), private: sam.getPrivateKey() };
+  }
+
+  static async lookup(c: Configuration, address: string): Promise<string> {
+    const sam = new I2pSam(c);
+    await sam.open();
+    return await sam.resolve(address);
   }
 }

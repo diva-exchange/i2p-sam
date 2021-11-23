@@ -82,7 +82,9 @@ import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
 
 ### Base Class
 
-#### lookup(name: string): Promise\<string\>
+#### resolve(name: string): string
+
+Resolve (aka lookup) a destination (public key) of an I2P address.
 
 Example: 
 
@@ -96,12 +98,16 @@ I2PSAMRaw({
   }
 })
   .then((sam) => 
-    sam.lookup('diva.i2p')
+    sam.resolve('diva.i2p')
       .then((dest) => console.log(dest))
   );
 ```
 
+See also: static lookup()
+
 #### getLocalDestination(): string
+
+Get the local destination, which is the public key.
 
 Example: 
 
@@ -118,6 +124,8 @@ I2PSAMRaw({
 
 #### getPublicKey(): string
 
+Get the public key of the local destination.
+
 Example: 
 
 ```
@@ -132,6 +140,8 @@ I2PSAMStream({
 ```
 
 #### getPrivateKey(): string
+
+Get the private key of the local destination.
 
 Example: 
 
@@ -148,6 +158,8 @@ I2PSAMRaw({
 
 #### getKeyPair(): { public: string, private: string }
 
+Get the public and private key of the local destination.
+
 Example: 
 
 ```
@@ -163,6 +175,8 @@ I2PSAMStream({
 
 #### static toB32(destination: string): string
 
+Convert a destination to a b32 address (without any extensions - just a Base32 string).
+
 Example: 
 
 ```
@@ -173,6 +187,40 @@ console.log(
 );
 ```
 
+#### static createLocalDestination(c: Configuration): Promise\<{ address: string, public: string, private: string }\>
+
+Create a new local destination and return its properties.
+
+Example: 
+
+```
+import { createLocalDestination } from '@diva.exchange/i2p-sam';
+
+createLocalDestination({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}).then((obj) => console.log(obj));
+```
+
+
+#### static lookup(c: Configuration, name: string): Promise\<string\>
+
+Resolve (aka lookup) a destination (public key) of an I2P address.
+
+Example: 
+
+```
+import { lookup } from '@diva.exchange/i2p-sam';
+
+lookup({
+  sam: {
+    host: 127.0.0.1,            # your local I2P SAM host
+    portTCP: 7656               # your local I2P SAM port
+  }
+}, 'diva.i2p').then((dest) => console.log(dest));
+```
 
 ### I2PSAMStream
 

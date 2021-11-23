@@ -33,3 +33,11 @@ export const I2PSAMRaw = async (c: Configuration) => {
 export const toB32 = (s: string) => {
   return I2pSam.toB32(s);
 };
+
+export const createLocalDestination = async (c: Configuration) => {
+  return I2pSam.createLocalDestination(c);
+};
+
+export const lookup = async (c: Configuration, address: string) => {
+  return I2pSam.lookup(c, address);
+};

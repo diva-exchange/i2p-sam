@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toB32 = exports.I2PSAMRaw = exports.I2PSAMStream = void 0;
+exports.lookup = exports.createLocalDestination = exports.toB32 = exports.I2PSAMRaw = exports.I2PSAMStream = void 0;
 const i2p_sam_stream_1 = require("./i2p-sam-stream");
 const i2p_sam_raw_1 = require("./i2p-sam-raw");
 const i2p_sam_1 = require("./i2p-sam");
@@ -16,3 +16,11 @@ const toB32 = (s) => {
     return i2p_sam_1.I2pSam.toB32(s);
 };
 exports.toB32 = toB32;
+const createLocalDestination = async (c) => {
+    return i2p_sam_1.I2pSam.createLocalDestination(c);
+};
+exports.createLocalDestination = createLocalDestination;
+const lookup = async (c, address) => {
+    return i2p_sam_1.I2pSam.lookup(c, address);
+};
+exports.lookup = lookup;

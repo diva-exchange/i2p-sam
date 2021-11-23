@@ -15,7 +15,7 @@ export declare class I2pSam {
   protected parseReply(data: Buffer): boolean | undefined;
   private static parseReplyKeyValue;
   private generateDestination;
-  lookup(name: string): Promise<string>;
+  resolve(name: string): Promise<string>;
   getLocalDestination(): string;
   getLocalDestinationAsB32Address(): string;
   getPublicKey(): string;
@@ -25,4 +25,10 @@ export declare class I2pSam {
     private: string;
   };
   static toB32(base64Destination: string): string;
+  static createLocalDestination(c: Configuration): Promise<{
+    address: string;
+    public: string;
+    private: string;
+  }>;
+  static lookup(c: Configuration, address: string): Promise<string>;
 }
