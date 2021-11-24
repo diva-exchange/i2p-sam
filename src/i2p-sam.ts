@@ -43,11 +43,13 @@ export class I2pSam {
   protected socketControl: Socket = {} as Socket;
 
   // identity
-  private publicKey: string = '';
-  private privateKey: string = '';
+  private publicKey: string;
+  private privateKey: string;
 
   protected constructor(c: Configuration) {
     this.config = new Config(c);
+    this.publicKey = this.config.sam.publicKey || '';
+    this.privateKey = this.config.sam.privateKey || '';
     this.eventEmitter = new EventEmitter();
   }
 
@@ -64,7 +66,7 @@ export class I2pSam {
     });
 
     await this.hello(this.socketControl);
-    if (!this.config.sam.publicKey || !this.config.sam.privateKey) {
+    if (!this.publicKey || !this.privateKey) {
       await this.generateDestination();
     }
 
