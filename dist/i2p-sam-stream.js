@@ -19,6 +19,10 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
     }
     async open() {
         await super.open();
+        this.destination = this.config.stream.destination || '';
+        if (!this.destination) {
+            throw new Error('Stream destination empty');
+        }
         this.socketStream = new net_1.Socket();
         this.socketStream.on('data', (data) => {
             if (this.hasStream) {
@@ -28,38 +32,39 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
                 this.parseReply(data);
             }
         });
-        this.socketStream.on('error', (error) => {
-            this.eventEmitter.emit('error', error);
-        });
         this.socketStream.on('close', () => {
-            this.hasStream = false;
-            this.config.stream.onClose && this.config.stream.onClose();
+            this.emit('stream-close');
+        });
+        this.socketStream.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
+            this.socketStream.removeAllListeners('error');
+            this.socketStream.on('error', (error) => {
+                this.emit('error', error);
+            });
         });
         await this.hello(this.socketStream);
         return Promise.resolve(this);
     }
+    close() {
+        this.socketStream.destroy();
+        super.close();
+    }
     async connect() {
-        this.destination = this.config.stream.destination || '';
-        if (!this.destination) {
-            throw new Error('Stream destination empty');
-        }
         return new Promise((resolve, reject) => {
-            this.eventEmitter.removeAllListeners('error');
-            this.eventEmitter.once('error', reject);
-            this.eventEmitter.removeAllListeners('stream');
-            this.eventEmitter.once('stream', () => {
+            this.internalEventEmitter.removeAllListeners();
+            this.internalEventEmitter.once('error', reject);
+            this.internalEventEmitter.once('stream', () => {
                 this.hasStream = true;
                 resolve();
             });
             const s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
             this.socketStream.write(s, (error) => {
-                error && this.eventEmitter.emit('error', error);
+                error && this.internalEventEmitter.emit('error', error);
             });
         });
     }
-    send(msg) {
+    stream(msg) {
         this.socketStream.write(msg, (error) => {
-            error && this.eventEmitter.emit('error', error);
+            error && this.emit('error', error);
         });
     }
 }

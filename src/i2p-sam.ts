@@ -1,18 +1,5 @@
 /**
- * Copyright (C) 2021 diva.exchange
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * MIT License - Copyright (c) 2021 diva.exchange
  *
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
@@ -22,6 +9,7 @@ import crypto from 'crypto';
 import { EventEmitter } from 'events';
 import { Config, Configuration } from './config';
 import { Socket } from 'net';
+import { I2pSamDatagram, I2pSamRaw, I2pSamStream } from './i2p-sam';
 
 const REPLY_HELLO = 'HELLOREPLY';
 const REPLY_DEST = 'DESTREPLY';
@@ -37,20 +25,34 @@ const KEY_VALUE = 'VALUE';
 
 const VALUE_OK = 'OK';
 
-export class I2pSam {
+export class I2pSam extends EventEmitter {
   protected config: Config;
-  protected eventEmitter: EventEmitter;
   protected socketControl: Socket = {} as Socket;
 
   // identity
   private publicKey: string;
   private privateKey: string;
 
+  protected internalEventEmitter: EventEmitter;
+
+  static async createStream(c: Configuration): Promise<I2pSamStream> {
+    return await I2pSamStream.make(c);
+  }
+
+  static async createDatagram(c: Configuration): Promise<I2pSamDatagram> {
+    return await I2pSamDatagram.make(c);
+  }
+
+  static async createRaw(c: Configuration): Promise<I2pSamRaw> {
+    return await I2pSamRaw.make(c);
+  }
+
   protected constructor(c: Configuration) {
+    super();
     this.config = new Config(c);
     this.publicKey = this.config.sam.publicKey || '';
     this.privateKey = this.config.sam.privateKey || '';
-    this.eventEmitter = new EventEmitter();
+    this.internalEventEmitter = new EventEmitter();
   }
 
   protected async open(): Promise<any> {
@@ -58,19 +60,34 @@ export class I2pSam {
     this.socketControl.on('data', (data: Buffer) => {
       this.parseReply(data);
     });
-    this.socketControl.on('error', (error: Error) => {
-      this.eventEmitter.emit('error', error);
-    });
     this.socketControl.on('close', () => {
-      this.config.sam.onClose && this.config.sam.onClose();
+      this.emit('control-close');
     });
 
-    await this.hello(this.socketControl);
-    if (!this.publicKey || !this.privateKey) {
-      await this.generateDestination();
-    }
+    try {
+      await new Promise((resolve, reject) => {
+        this.socketControl.once('error', reject);
+        this.socketControl.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
+          this.socketControl.removeAllListeners('error');
+          this.socketControl.on('error', (error: Error) => {
+            this.emit('error', error);
+          });
+          resolve(true);
+        });
+      });
 
-    return Promise.resolve(this);
+      await this.hello(this.socketControl);
+      if (!this.publicKey || !this.privateKey) {
+        await this.generateDestination();
+      }
+      return Promise.resolve(this);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
+  protected close() {
+    this.socketControl.destroy();
   }
 
   protected async hello(socket: Socket): Promise<void> {
@@ -78,15 +95,12 @@ export class I2pSam {
       const min = this.config.sam.versionMin || false;
       const max = this.config.sam.versionMax || false;
 
-      this.eventEmitter.removeAllListeners('error');
-      this.eventEmitter.once('error', reject);
-      this.eventEmitter.removeAllListeners('hello');
-      this.eventEmitter.once('hello', resolve);
+      this.internalEventEmitter.removeAllListeners();
+      this.internalEventEmitter.once('error', reject);
+      this.internalEventEmitter.once('hello', resolve);
 
-      socket.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
-        socket.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
-          error && this.eventEmitter.emit('error', error);
-        });
+      socket.write(`HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`, (error) => {
+        error && reject(error);
       });
     });
   }
@@ -98,20 +112,18 @@ export class I2pSam {
         case 'STREAM':
           s += 'STYLE=STREAM\n';
           break;
+        case 'DATAGRAM':
         case 'RAW':
-          s += `STYLE=RAW PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}\n`;
+          s += `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}\n`;
           break;
       }
 
-      this.eventEmitter.removeAllListeners('error');
-      this.eventEmitter.once('error', reject);
-      this.eventEmitter.removeAllListeners('session');
-      this.eventEmitter.once('session', () => {
-        resolve(this);
-      });
+      this.internalEventEmitter.removeAllListeners();
+      this.internalEventEmitter.once('error', reject);
+      this.internalEventEmitter.once('session', resolve);
 
       this.socketControl.write(s, (error) => {
-        error && this.eventEmitter.emit('error', error);
+        error && reject(error);
       });
     });
   }
@@ -125,26 +137,26 @@ export class I2pSam {
     switch (c + s) {
       case REPLY_HELLO:
         return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.eventEmitter.emit('error', new Error('HELLO failed: ' + sData))
-          : this.eventEmitter.emit('hello');
+          ? this.internalEventEmitter.emit('error', new Error('HELLO failed: ' + sData))
+          : this.internalEventEmitter.emit('hello');
       case REPLY_DEST:
         this.publicKey = oKeyValue[KEY_PUB] || '';
         this.privateKey = oKeyValue[KEY_PRIV] || '';
         return !this.publicKey || !this.privateKey
-          ? this.eventEmitter.emit('error', new Error('DEST failed: ' + sData))
-          : this.eventEmitter.emit('destination');
+          ? this.internalEventEmitter.emit('error', new Error('DEST failed: ' + sData))
+          : this.internalEventEmitter.emit('destination');
       case REPLY_SESSION:
         return oKeyValue[KEY_RESULT] !== VALUE_OK || !(oKeyValue[KEY_DESTINATION] || '')
-          ? this.eventEmitter.emit('error', new Error('SESSION failed: ' + sData))
-          : this.eventEmitter.emit('session');
+          ? this.internalEventEmitter.emit('error', new Error('SESSION failed: ' + sData))
+          : this.internalEventEmitter.emit('session', this);
       case REPLY_NAMING:
         return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.eventEmitter.emit('error', new Error('NAMING failed: ' + sData))
-          : this.eventEmitter.emit('naming', oKeyValue[KEY_VALUE]);
+          ? this.internalEventEmitter.emit('error', new Error('NAMING failed: ' + sData))
+          : this.internalEventEmitter.emit('naming', oKeyValue[KEY_VALUE]);
       case REPLY_STREAM:
         return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.eventEmitter.emit('error', new Error('STREAM failed: ' + sData))
-          : this.eventEmitter.emit('stream');
+          ? this.internalEventEmitter.emit('error', new Error('STREAM failed: ' + sData))
+          : this.internalEventEmitter.emit('stream');
       default:
         return;
     }
@@ -164,39 +176,33 @@ export class I2pSam {
     this.publicKey = '';
     this.privateKey = '';
     return new Promise((resolve, reject) => {
-      this.eventEmitter.removeAllListeners('error');
-      this.eventEmitter.once('error', reject);
-      this.eventEmitter.removeAllListeners('destination');
-      this.eventEmitter.once('destination', resolve);
+      this.internalEventEmitter.removeAllListeners();
+      this.internalEventEmitter.once('error', reject);
+      this.internalEventEmitter.once('destination', resolve);
 
       this.socketControl.write('DEST GENERATE\n', (error) => {
-        error && this.eventEmitter.emit('error', error);
+        error && this.internalEventEmitter.emit('error', error);
       });
     });
   }
 
-  async resolve(name: string): Promise<string> {
+  protected async resolve(name: string): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!/\.i2p$/.test(name)) {
         reject(new Error('Invalid I2P address: ' + name));
       }
 
-      this.eventEmitter.removeAllListeners('error');
-      this.eventEmitter.once('error', reject);
-      this.eventEmitter.removeAllListeners('naming');
-      this.eventEmitter.once('naming', resolve);
+      this.internalEventEmitter.removeAllListeners();
+      this.internalEventEmitter.once('error', reject);
+      this.internalEventEmitter.once('naming', resolve);
 
       this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error) => {
-        error && this.eventEmitter.emit('error', error);
+        error && this.internalEventEmitter.emit('error', error);
       });
     });
   }
 
-  getLocalDestination(): string {
-    return this.publicKey;
-  }
-
-  getLocalDestinationAsB32Address(): string {
+  getB32Address(): string {
     return I2pSam.toB32(this.publicKey) + '.b32.i2p';
   }
 
@@ -223,12 +229,26 @@ export class I2pSam {
   static async createLocalDestination(c: Configuration): Promise<{ address: string; public: string; private: string }> {
     const sam = new I2pSam(c);
     await sam.open();
-    return { address: sam.getLocalDestinationAsB32Address(), public: sam.getPublicKey(), private: sam.getPrivateKey() };
+    sam.close();
+    return { address: sam.getB32Address(), public: sam.getPublicKey(), private: sam.getPrivateKey() };
   }
 
   static async lookup(c: Configuration, address: string): Promise<string> {
     const sam = new I2pSam(c);
     await sam.open();
-    return await sam.resolve(address);
+    const s = await sam.resolve(address);
+    sam.close();
+    return s;
   }
 }
+
+export * from './i2p-sam-stream';
+export * from './i2p-sam-datagram';
+export * from './i2p-sam-raw';
+
+export const createStream = I2pSam.createStream;
+export const createDatagram = I2pSam.createDatagram;
+export const createRaw = I2pSam.createRaw;
+export const toB32 = I2pSam.toB32;
+export const createLocalDestination = I2pSam.createLocalDestination;
+export const lookup = I2pSam.lookup;

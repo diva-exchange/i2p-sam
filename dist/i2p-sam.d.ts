@@ -2,22 +2,26 @@
 import { EventEmitter } from 'events';
 import { Config, Configuration } from './config';
 import { Socket } from 'net';
-export declare class I2pSam {
+import { I2pSamDatagram, I2pSamRaw, I2pSamStream } from './i2p-sam';
+export declare class I2pSam extends EventEmitter {
   protected config: Config;
-  protected eventEmitter: EventEmitter;
   protected socketControl: Socket;
   private publicKey;
   private privateKey;
+  protected internalEventEmitter: EventEmitter;
+  static createStream(c: Configuration): Promise<I2pSamStream>;
+  static createDatagram(c: Configuration): Promise<I2pSamDatagram>;
+  static createRaw(c: Configuration): Promise<I2pSamRaw>;
   protected constructor(c: Configuration);
   protected open(): Promise<any>;
+  protected close(): void;
   protected hello(socket: Socket): Promise<void>;
   protected initSession(type: string): Promise<any>;
   protected parseReply(data: Buffer): boolean | undefined;
   private static parseReplyKeyValue;
   private generateDestination;
-  resolve(name: string): Promise<string>;
-  getLocalDestination(): string;
-  getLocalDestinationAsB32Address(): string;
+  protected resolve(name: string): Promise<string>;
+  getB32Address(): string;
   getPublicKey(): string;
   getPrivateKey(): string;
   getKeyPair(): {
@@ -32,3 +36,12 @@ export declare class I2pSam {
   }>;
   static lookup(c: Configuration, address: string): Promise<string>;
 }
+export * from './i2p-sam-stream';
+export * from './i2p-sam-datagram';
+export * from './i2p-sam-raw';
+export declare const createStream: typeof I2pSam.createStream;
+export declare const createDatagram: typeof I2pSam.createDatagram;
+export declare const createRaw: typeof I2pSam.createRaw;
+export declare const toB32: typeof I2pSam.toB32;
+export declare const createLocalDestination: typeof I2pSam.createLocalDestination;
+export declare const lookup: typeof I2pSam.lookup;

@@ -1,18 +1,5 @@
 /**
- * Copyright (C) 2021 diva.exchange
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * MIT License - Copyright (c) 2021 diva.exchange
  *
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
@@ -20,7 +7,9 @@
 import { I2pSam } from './i2p-sam';
 import { Configuration } from './config';
 import dgram, { Socket } from 'dgram';
-import { deflateRawSync, inflateRawSync } from 'zlib';
+
+const MIN_UDP_MESSAGE_LENGTH = 1;
+const MAX_UDP_MESSAGE_LENGTH = 31744;
 
 export class I2pSamRaw extends I2pSam {
   private socketControlUDP: Socket = {} as Socket; // outgoing
@@ -38,7 +27,7 @@ export class I2pSamRaw extends I2pSam {
 
     this.socketControlUDP = dgram.createSocket({ type: 'udp4' });
     this.socketControlUDP.on('error', (error: Error) => {
-      this.eventEmitter.emit('error', error);
+      this.emit('error', error);
     });
 
     // no listener available
@@ -48,32 +37,42 @@ export class I2pSamRaw extends I2pSam {
 
     this.socketListen = dgram.createSocket('udp4', (msg: Buffer) => {
       try {
-        this.config.listen.onMessage &&
-          this.config.listen.onMessage(inflateRawSync(Buffer.from(msg.toString(), 'base64')));
+        let [fromDestination, message] = msg.toString().split('\n');
+        if (!message) {
+          message = fromDestination;
+          fromDestination = '';
+        }
+        this.config.listen.onMessage && this.config.listen.onMessage(Buffer.from(message, 'base64'), fromDestination);
       } catch (error) {
         return;
       }
     });
-    this.socketListen.on('error', (error: Error) => {
-      this.eventEmitter.emit('error', error);
-    });
     this.socketListen.on('close', () => {
-      this.config.listen.onClose && this.config.listen.onClose();
+      this.emit('listen-close');
     });
 
     return new Promise((resolve, reject) => {
-      try {
-        this.socketListen.bind(this.config.listen.port, this.config.listen.address, () => {
-          resolve(this);
-        });
-      } catch (error) {
+      this.socketListen.once('error', (error: Error) => {
         reject(error);
-      }
+      });
+      this.socketListen.bind(this.config.listen.port, this.config.listen.address, () => {
+        this.socketListen.removeAllListeners('error');
+        this.socketListen.on('error', (error: Error) => {
+          this.emit('error', error);
+        });
+        resolve(this);
+      });
     });
   }
 
-  protected async initSession(): Promise<I2pSamRaw> {
-    return super.initSession('RAW');
+  close() {
+    this.socketControlUDP.close();
+    this.socketListen.close();
+    super.close();
+  }
+
+  protected async initSession(type: string = 'RAW'): Promise<I2pSamRaw> {
+    return super.initSession(type);
   }
 
   send(destination: string, msg: Buffer) {
@@ -82,12 +81,19 @@ export class I2pSamRaw extends I2pSam {
         destination = await this.resolve(destination);
       }
 
+      const s = msg.toString('base64');
+      if (s.length < MIN_UDP_MESSAGE_LENGTH) {
+        return this.emit('error', new Error('I2pSamRaw.send(): message length < MIN_UDP_MESSAGE_LENGTH'));
+      } else if (s.length > MAX_UDP_MESSAGE_LENGTH) {
+        return this.emit('error', new Error('I2pSamRaw.send(): message length > MAX_UDP_MESSAGE_LENGTH'));
+      }
+
       this.socketControlUDP.send(
-        `3.0 ${this.config.session.id} ${destination}\n` + deflateRawSync(msg).toString('base64'),
+        `3.0 ${this.config.session.id} ${destination}\n` + s,
         this.config.sam.portUDP,
         this.config.sam.host,
         (error) => {
-          error && this.eventEmitter.emit('error', error);
+          error && this.emit('error', error);
         }
       );
     })(destination, msg);

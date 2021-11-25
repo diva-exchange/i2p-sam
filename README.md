@@ -1,6 +1,6 @@
 # I2P SAM
 
-An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a secure "privacy-by-design" network.
+An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a "privacy-by-design" network.
 
 To get I2P up and running, take a look at the project: https://codeberg.org/diva.exchange/i2p
 
@@ -13,9 +13,9 @@ To get I2P up and running, take a look at the project: https://codeberg.org/diva
 Send an HTTP GET request to diva.i2p and output the response:
 
 ```
-import { I2PSAMStream } from '@diva.exchange/i2p-sam';
+import { createStream } from '@diva.exchange/i2p-sam';
 
-I2PSAMStream({
+createStream({
   stream: {
     destination: 'diva.i2p',
     onMessage: (data: Buffer) => {
@@ -26,21 +26,21 @@ I2PSAMStream({
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
   },
-}).then((i2psam) => {
-  i2psam.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+}).then((sam) => {
+  sam.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
 });
 ```
 
-### How to Use Datagrams
+### How to Use Repliable Datagrams
 
 Send messages from peer A to peer B:
 
 ```
-import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
+import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
 
 (async () => {
   // instantiate Peer A
-  const peerA = await I2PSAMRaw({
+  const peerA = await createDatagram({
     sam: {
       host: 127.0.0.1,            # your local I2P SAM host
       portTCP: 7656               # your local I2P SAM port
@@ -48,7 +48,54 @@ import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
   }); 
   
   // instantiate Peer B
-  const peerB = await I2PSAMRaw({
+  const peerB = await createDatagram({
+    sam: {
+      host: 127.0.0.1,            # your local I2P SAM host
+      portTCP: 7656               # your local I2P SAM port
+    },
+    listen: { 
+      address: 127.0.0.1,         # udp listener
+      port: 20202,                # udp listener
+      onMessage: (data: Buffer, fromDestination) => {
+        console.debug(`Incoming Data from ${toB32(fromDestination)}: ${data.toString()}`);
+      }
+    }
+  }); 
+  
+  // send 100 messages via UDP, every 500ms a message
+  // IMPORTANT: UDP is not reliable. Some messages might get lost.
+  const msg: string = 'Hello World';
+  await new Promise((resolve) => {
+    let t = 0;
+    const i = setInterval(async () => {
+      await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+      if (t++ >= 100) {
+        clearInterval(i);
+        resolve(true);
+      }
+    }, 500);
+  });
+})();
+```
+
+### How to Use Raw Datagrams
+
+Send messages from peer A to peer B:
+
+```
+import { createRaw } from '@diva.exchange/i2p-sam';
+
+(async () => {
+  // instantiate Peer A
+  const peerA = await createRaw({
+    sam: {
+      host: 127.0.0.1,            # your local I2P SAM host
+      portTCP: 7656               # your local I2P SAM port
+    }
+  }); 
+  
+  // instantiate Peer B
+  const peerB = await createRaw({
     sam: {
       host: 127.0.0.1,            # your local I2P SAM host
       portTCP: 7656               # your local I2P SAM port
@@ -62,14 +109,14 @@ import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
     }
   }); 
   
-  // send 500 messages via UDP, every 500ms
+  // send 100 messages via UDP, every 500ms a message
   // IMPORTANT: UDP is not reliable. Some messages might get lost.
   const msg: string = 'Hello Peer B - I am Peer A';
   await new Promise((resolve) => {
     let t = 0;
     const i = setInterval(async () => {
       await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
-      if (t++ >= 500) {
+      if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
       }
@@ -80,41 +127,16 @@ import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
 
 ## API
 
-### Base Class
-
-#### resolve(name: string): string
-
-Resolve (aka lookup) a destination (public key) of an I2P address.
-
-Example: 
-
-```
-import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
-
-I2PSAMRaw({
-  sam: {
-    host: 127.0.0.1,            # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
-  }
-})
-  .then((sam) => 
-    sam.resolve('diva.i2p')
-      .then((dest) => console.log(dest))
-  );
-```
-
-See also: static lookup()
-
-#### getLocalDestination(): string
+### getLocalDestination(): string
 
 Get the local destination, which is the public key.
 
 Example: 
 
 ```
-import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
+import { createRaw } from '@diva.exchange/i2p-sam';
 
-I2PSAMRaw({
+createRaw({
   sam: {
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
@@ -122,16 +144,16 @@ I2PSAMRaw({
 }).then((sam) => console.log(sam.getLocalDestination()));
 ```
 
-#### getPublicKey(): string
+### getPublicKey(): string
 
 Get the public key of the local destination.
 
 Example: 
 
 ```
-import { I2PSAMStream } from '@diva.exchange/i2p-sam';
+import { createDatagram } from '@diva.exchange/i2p-sam';
 
-I2PSAMStream({
+createDatagram({
   sam: {
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
@@ -139,16 +161,16 @@ I2PSAMStream({
 }).then((sam) => console.log(sam.getPublicKey()));
 ```
 
-#### getPrivateKey(): string
+### getPrivateKey(): string
 
 Get the private key of the local destination.
 
 Example: 
 
 ```
-import { I2PSAMRaw } from '@diva.exchange/i2p-sam';
+import { createDatagram } from '@diva.exchange/i2p-sam';
 
-I2PSAMRaw({
+createDatagram({
   sam: {
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
@@ -156,24 +178,48 @@ I2PSAMRaw({
 }).then((sam) => console.log(sam.getPrivateKey()));
 ```
 
-#### getKeyPair(): { public: string, private: string }
+### getKeyPair(): { public: string, private: string }
 
 Get the public and private key of the local destination.
 
 Example: 
 
 ```
-import { I2PSAMStream } from '@diva.exchange/i2p-sam';
+import { createStream } from '@diva.exchange/i2p-sam';
 
-I2PSAMStream({
+createStream({
   sam: {
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
-  }
+  },
+  stream: {
+    destination: 'diva.i2p'
+  },
 }).then((sam) => console.log(sam.getKeyPair()));
 ```
 
-#### static toB32(destination: string): string
+### close()
+
+Close a SAM connection.
+
+Example: 
+
+```
+import { createRaw } from '@diva.exchange/i2p-sam';
+
+(async () => {
+  const sam = await createRaw({
+    sam: {
+      host: 127.0.0.1,            # your local I2P SAM host
+      portTCP: 7656               # your local I2P SAM port
+    }
+  });
+  
+  sam.close();
+})();
+```
+
+### toB32(destination: string): string
 
 Convert a destination to a b32 address (without any extensions - just a Base32 string).
 
@@ -187,7 +233,7 @@ console.log(
 );
 ```
 
-#### static createLocalDestination(c: Configuration): Promise\<{ address: string, public: string, private: string }\>
+### createLocalDestination(c: Configuration): Promise\<{ address: string, public: string, private: string }\>
 
 Create a new local destination and return its properties.
 
@@ -205,9 +251,9 @@ createLocalDestination({
 ```
 
 
-#### static lookup(c: Configuration, name: string): Promise\<string\>
+### lookup(c: Configuration, name: string): Promise\<string\>
 
-Resolve (aka lookup) a destination (public key) of an I2P address.
+Lookup (aka resolve) an I2P address (like diva.i2p or also a .b32.i2p address) to a destination. The destination, which is the public key, is a base64 encoded string.
 
 Example: 
 
@@ -222,16 +268,12 @@ lookup({
 }, 'diva.i2p').then((dest) => console.log(dest));
 ```
 
-### I2PSAMStream
-
-#### send(msg: Buffer)
+### stream(msg: Buffer)
 
 Example: see the _Get Started: How to Use Streams_ above. 
 
 
-### I2PSAMRaw
-
-#### send(destination: string, msg: Buffer)
+### send(destination: string, msg: Buffer)
 
 Example: see _Get Started: How to Use Datagrams_ above. 
 
@@ -244,7 +286,6 @@ type tSession = {
 type tStream = {
   destination: string;
   onMessage?: Function;
-  onClose?: Function;
 };
 
 type tListen = {
@@ -253,7 +294,6 @@ type tListen = {
   hostForward?: string;     # default [address]
   portForward?: number;     # default [port]
   onMessage?: Function;
-  onClose?: Function;
 };
 
 type tSam = {
@@ -264,7 +304,6 @@ type tSam = {
   versionMax?: string;
   publicKey?: string;
   privateKey?: string;
-  onClose?: Function;
 };
 
 export type Configuration = {
@@ -274,6 +313,33 @@ export type Configuration = {
   sam?: tSam;
 };
 ```
+
+### Events
+
+#### error
+Generic Error event - emitted if sockets report errors.
+
+```
+import { createRaw } from '@diva.exchange/i2p-sam';
+
+(async () => {
+  const sam = await createRaw({
+    sam: {
+      host: 127.0.0.1,            # your local I2P SAM host
+      portTCP: 7656               # your local I2P SAM port
+    }
+  });
+  sam.on('error', (error) => console.debug(error));
+})();
+```
+
+
+#### control-close
+Emitted if the SAM control socket got closed.  
+
+#### stream-close
+Emitted if the stream socket got closed.  
+
 
 ## How to Run Unit Tests
 
@@ -332,7 +398,9 @@ Awesome, thank you!
 
 ## References
 
-I2Pd, see https://i2pd.readthedocs.io/
+SAM docs: https://geti2p.net/en/docs/api/samv3
+
+I2Pd: https://i2pd.readthedocs.io/
 
 ## License
 

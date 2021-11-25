@@ -7,6 +7,7 @@ export declare class I2pSamStream extends I2pSam {
   private hasStream;
   static make(c: Configuration): Promise<I2pSamStream>;
   protected open(): Promise<I2pSamStream>;
+  close(): void;
   private connect;
-  send(msg: Buffer): void;
+  stream(msg: Buffer): void;
 }

@@ -1,8 +1,8 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
-  "main": "dist/index.js",
+  "main": "dist/i2p-sam.js",
   "keywords": [
     "i2p",
     "sam",

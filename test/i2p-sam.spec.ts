@@ -1,26 +1,12 @@
 /**
- * Copyright (C) 2021 diva.exchange
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * MIT License - Copyright (c) 2021 diva.exchange
  *
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import { suite, test, slow, timeout } from '@testdeck/mocha';
+import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { I2PSAMRaw, toB32, createLocalDestination, lookup } from '../src';
-import { I2pSamRaw } from '../src/i2p-sam-raw';
+import { toB32, createLocalDestination, lookup, createRaw, I2pSamRaw } from '../src/i2p-sam';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP || 7656);
@@ -39,9 +25,7 @@ class TestI2pSamBaseClass {
 
   @test
   async createLocalDestination() {
-    const obj = await createLocalDestination({
-      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
-    });
+    const obj = await createLocalDestination({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } });
 
     expect(obj.address).not.to.be.empty;
     expect(obj.public).not.to.be.empty;
@@ -50,20 +34,19 @@ class TestI2pSamBaseClass {
 
   @test
   @timeout(120000)
-  @slow(120000)
   async keys() {
-    const sam: I2pSamRaw = await I2PSAMRaw({
+    const sam: I2pSamRaw = await createRaw({
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
     });
 
     const pair = sam.getKeyPair();
     expect(pair.public).to.be.eq(sam.getPublicKey());
     expect(pair.private).to.be.eq(sam.getPrivateKey());
-    expect(sam.getLocalDestination()).to.be.eq(pair.public);
-    expect(sam.getLocalDestinationAsB32Address()).not.to.be.empty;
+    expect(sam.getB32Address()).not.to.be.empty;
   }
 
   @test
+  @timeout(10000)
   async lookup() {
     const s: string = await lookup({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } }, 'diva.i2p');
     expect(s).not.to.be.empty;
@@ -71,17 +54,16 @@ class TestI2pSamBaseClass {
     try {
       await lookup({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } }, 'diva.bogus');
       expect(false).to.be.true;
-    } catch (error) {
-      expect(true).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('Invalid I2P address');
     }
   }
 
   @test
-  @timeout(10000)
-  @slow(10000)
-  async error() {
+  async fail() {
+    // version error
     try {
-      await I2PSAMRaw({
+      await createRaw({
         sam: {
           host: SAM_HOST,
           portTCP: SAM_PORT_TCP,
@@ -91,24 +73,39 @@ class TestI2pSamBaseClass {
         },
       });
       expect(false).to.be.true;
-    } catch (error) {
-      expect(true).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('HELLO failed').contains('RESULT=NOVERSION');
     }
 
-    // connection error
+    // public key / private key issues
     try {
-      await I2PSAMRaw({
+      await createRaw({
         sam: {
-          host: '127.0.0.256',
+          host: SAM_HOST,
           portTCP: SAM_PORT_TCP,
-          portUDP: SAM_PORT_UDP,
-          versionMin: '9.0',
-          versionMax: '0.0',
+          publicKey: '-',
+          privateKey: '--',
         },
       });
       expect(false).to.be.true;
-    } catch (error) {
-      expect(true).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('SESSION failed').contains('RESULT=INVALID_KEY');
+    }
+  }
+
+  @test
+  async failConnect() {
+    // connection error
+    try {
+      await createRaw({
+        sam: {
+          host: '127.0.0.256',
+          portTCP: SAM_PORT_TCP,
+        },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('ENOTFOUND');
     }
   }
 }
