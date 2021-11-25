@@ -20,7 +20,7 @@ const SAM_LISTEN_FORWARD = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 @suite
 class TestI2pSamRaw {
   @test
-  @timeout(90000)
+  @timeout(120000)
   async send() {
     let messageCounterA = 0;
     let messageCounterB = 0;
