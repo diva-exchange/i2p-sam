@@ -39,6 +39,10 @@ export class I2pSam extends EventEmitter {
     return await I2pSamStream.make(c);
   }
 
+  static async createForward(c: Configuration): Promise<I2pSamStream> {
+    return await I2pSamStream.make(c);
+  }
+
   static async createDatagram(c: Configuration): Promise<I2pSamDatagram> {
     return await I2pSamDatagram.make(c);
   }
@@ -247,6 +251,7 @@ export * from './i2p-sam-datagram';
 export * from './i2p-sam-raw';
 
 export const createStream = I2pSam.createStream;
+export const createForward = I2pSam.createForward;
 export const createDatagram = I2pSam.createDatagram;
 export const createRaw = I2pSam.createRaw;
 export const toB32 = I2pSam.toB32;

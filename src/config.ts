@@ -14,7 +14,12 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  onMessage?: Function;
+  onData?: Function;
+};
+
+type tForward = {
+  host: string;
+  port: number;
 };
 
 type tListen = {
@@ -22,7 +27,7 @@ type tListen = {
   port: number;
   hostForward?: string;
   portForward?: number;
-  onMessage?: Function;
+  onData?: Function;
 };
 
 type tSam = {
@@ -38,6 +43,7 @@ type tSam = {
 export type Configuration = {
   session?: tSession;
   stream?: tStream;
+  forward?: tForward;
   listen?: tListen;
   sam?: tSam;
 };
@@ -45,6 +51,7 @@ export type Configuration = {
 type ConfigurationDefault = {
   session: tSession;
   stream: tStream;
+  forward: tForward;
   listen: tListen;
   sam: tSam;
 };
@@ -55,6 +62,10 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
+  },
+  forward: {
+    host: '',
+    port: 0,
   },
   listen: {
     address: '127.0.0.1',
@@ -75,6 +86,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
 
 export class Config {
   public session: tSession;
+  public forward: tForward;
   public stream: tStream;
   public listen: tListen;
   public sam: tSam;
@@ -83,6 +95,8 @@ export class Config {
     this.session = { ...DEFAULT_CONFIGURATION.session, ...(c.session || {}) };
     this.session.id = this.session.id || nanoid(DEFAULT_LENGTH_SESSION);
     this.stream = { ...DEFAULT_CONFIGURATION.stream, ...(c.stream || {}) };
+    this.forward = { ...DEFAULT_CONFIGURATION.forward, ...(c.forward || {}) };
+    this.forward.port = Number(this.forward.port) > 0 ? Config.port(Number(this.forward.port)) : 0;
     this.listen = { ...DEFAULT_CONFIGURATION.listen, ...(c.listen || {}) };
     this.listen.port = Number(this.listen.port) > 0 ? Config.port(Number(this.listen.port)) : 0;
     this.listen.hostForward = this.listen.hostForward || this.listen.address;

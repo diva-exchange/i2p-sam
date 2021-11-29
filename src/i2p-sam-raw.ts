@@ -42,7 +42,7 @@ export class I2pSamRaw extends I2pSam {
           message = fromDestination;
           fromDestination = '';
         }
-        this.config.listen.onMessage && this.config.listen.onMessage(Buffer.from(message, 'base64'), fromDestination);
+        this.config.listen.onData && this.config.listen.onData(Buffer.from(message, 'base64'), fromDestination);
       } catch (error) {
         return;
       }
