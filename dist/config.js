@@ -10,6 +10,10 @@ const DEFAULT_CONFIGURATION = {
     stream: {
         destination: '',
     },
+    forward: {
+        host: '',
+        port: 0,
+    },
     listen: {
         address: '127.0.0.1',
         port: 0,
@@ -31,6 +35,8 @@ class Config {
         this.session = { ...DEFAULT_CONFIGURATION.session, ...(c.session || {}) };
         this.session.id = this.session.id || (0, nanoid_1.nanoid)(DEFAULT_LENGTH_SESSION);
         this.stream = { ...DEFAULT_CONFIGURATION.stream, ...(c.stream || {}) };
+        this.forward = { ...DEFAULT_CONFIGURATION.forward, ...(c.forward || {}) };
+        this.forward.port = Number(this.forward.port) > 0 ? Config.port(Number(this.forward.port)) : 0;
         this.listen = { ...DEFAULT_CONFIGURATION.listen, ...(c.listen || {}) };
         this.listen.port = Number(this.listen.port) > 0 ? Config.port(Number(this.listen.port)) : 0;
         this.listen.hostForward = this.listen.hostForward || this.listen.address;

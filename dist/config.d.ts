@@ -3,14 +3,18 @@ declare type tSession = {
 };
 declare type tStream = {
   destination: string;
-  onMessage?: Function;
+  onData?: Function;
+};
+declare type tForward = {
+  host: string;
+  port: number;
 };
 declare type tListen = {
   address: string;
   port: number;
   hostForward?: string;
   portForward?: number;
-  onMessage?: Function;
+  onData?: Function;
 };
 declare type tSam = {
   host: string;
@@ -24,11 +28,13 @@ declare type tSam = {
 export declare type Configuration = {
   session?: tSession;
   stream?: tStream;
+  forward?: tForward;
   listen?: tListen;
   sam?: tSam;
 };
 export declare class Config {
   session: tSession;
+  forward: tForward;
   stream: tStream;
   listen: tListen;
   sam: tSam;

@@ -8,6 +8,8 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
         super(...arguments);
         this.socketStream = {};
         this.destination = '';
+        this.hostForward = '';
+        this.portForward = 0;
         this.hasStream = false;
     }
     static async make(c) {
@@ -20,13 +22,15 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
     async open() {
         await super.open();
         this.destination = this.config.stream.destination || '';
-        if (!this.destination) {
-            throw new Error('Stream destination empty');
+        this.hostForward = this.config.forward.host || '';
+        this.portForward = this.config.forward.port || 0;
+        if (!(this.hostForward && this.portForward > 0) && !this.destination) {
+            throw new Error('Stream configuration invalid');
         }
         this.socketStream = new net_1.Socket();
         this.socketStream.on('data', (data) => {
             if (this.hasStream) {
-                this.config.stream.onMessage && this.config.stream.onMessage(data);
+                this.config.stream.onData && this.config.stream.onData(data);
             }
             else {
                 this.parseReply(data);
@@ -56,7 +60,10 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
                 this.hasStream = true;
                 resolve();
             });
-            const s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
+            let s = `STREAM FORWARD SILENT=false ID=${this.config.session.id} PORT=${this.portForward} HOST=${this.hostForward}\n`;
+            if (this.destination) {
+                s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
+            }
             this.socketStream.write(s, (error) => {
                 error && this.internalEventEmitter.emit('error', error);
             });
