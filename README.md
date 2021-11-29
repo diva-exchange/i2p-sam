@@ -127,23 +127,6 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 
 ## API
 
-### getLocalDestination(): string
-
-Get the local destination, which is the public key.
-
-Example: 
-
-```
-import { createRaw } from '@diva.exchange/i2p-sam';
-
-createRaw({
-  sam: {
-    host: 127.0.0.1,            # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
-  }
-}).then((sam) => console.log(sam.getLocalDestination()));
-```
-
 ### getPublicKey(): string
 
 Get the public key of the local destination.
