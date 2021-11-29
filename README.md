@@ -18,7 +18,7 @@ import { createStream } from '@diva.exchange/i2p-sam';
 createStream({
   stream: {
     destination: 'diva.i2p',
-    onMessage: (data: Buffer) => {
+    onData: (data: Buffer) => {
       console.log('Incoming Data: ' + data.toString());
     },
   },
@@ -29,6 +29,54 @@ createStream({
 }).then((sam) => {
   sam.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
 });
+```
+
+Forward incoming streaming data to a local socket server:
+
+```
+import { createStream, createForward, I2pSamStream } from '@diva.exchange/i2p-sam';
+import net from 'net';
+
+(async () => {
+  const serverForward = net.createServer((c) => {
+    console.debug('client connected');
+    c.on('end', () => {
+      console.debug('client disconnected');
+    });
+    c.on('data', (data: Buffer) => {
+      console.debug(data.toString());
+      c.write(`Hello Client!\n`);
+    });
+  });
+  serverForward.listen(20222, '127.0.0.1');
+
+  const samForward: I2pSamStream = await createForward({
+    sam: { 
+      host: 127.0.0.1,        # your local I2P SAM host
+      portTCP: 7656           # your local I2P SAM port
+    },
+    forward: {
+      host: '127.0.0.1',      # your local listener, see above
+      port: 20222,            # your local listener, see above
+    },
+  });
+
+  const samClient: I2pSamStream = await createStream({
+    sam: { 
+      host: 127.0.0.1,          # your local I2P SAM host
+      portTCP: 7656             # your local I2P SAM port
+    },
+    stream: {
+      destination: samForward.getPublicKey(),
+      onData: (data: Buffer) => {
+        console.debug(data.toString());
+      },
+    },
+  });
+
+  // send some data to destination
+  samClient.stream(Buffer.from(`Hi Server!\n`));
+})();
 ```
 
 ### How to Use Repliable Datagrams
@@ -56,7 +104,7 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
     listen: { 
       address: 127.0.0.1,         # udp listener
       port: 20202,                # udp listener
-      onMessage: (data: Buffer, fromDestination) => {
+      onData: (data: Buffer, fromDestination) => {
         console.debug(`Incoming Data from ${toB32(fromDestination)}: ${data.toString()}`);
       }
     }
@@ -103,7 +151,7 @@ import { createRaw } from '@diva.exchange/i2p-sam';
     listen: { 
       address: 127.0.0.1,         # udp listener
       port: 20202,                # udp listener
-      onMessage: (data: Buffer) => {
+      onData: (data: Buffer) => {
         console.log('Incoming Data: ' + data.toString());
       }
     }
@@ -268,21 +316,26 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  onMessage?: Function;
+  onData?: Function;
+};
+
+type tForward = {
+  host: string;
+  port: number;
 };
 
 type tListen = {
-  address: string;          # default 127.0.0.1
-  port: number;             # default 0
-  hostForward?: string;     # default [address]
-  portForward?: number;     # default [port]
-  onMessage?: Function;
+  address: string;
+  port: number;
+  hostForward?: string;
+  portForward?: number;
+  onData?: Function;
 };
 
 type tSam = {
-  host: string;             # default 127.0.0.1
-  portTCP: number;          # default 7656
-  portUDP?: number;         # default 7655
+  host: string;
+  portTCP: number;
+  portUDP?: number;
   versionMin?: string;
   versionMax?: string;
   publicKey?: string;
@@ -292,8 +345,45 @@ type tSam = {
 export type Configuration = {
   session?: tSession;
   stream?: tStream;
+  forward?: tForward;
   listen?: tListen;
   sam?: tSam;
+};
+
+type ConfigurationDefault = {
+  session: tSession;
+  stream: tStream;
+  forward: tForward;
+  listen: tListen;
+  sam: tSam;
+};
+
+const DEFAULT_CONFIGURATION: ConfigurationDefault = {
+  session: {
+    id: '',
+  },
+  stream: {
+    destination: '',
+  },
+  forward: {
+    host: '',
+    port: 0,
+  },
+  listen: {
+    address: '127.0.0.1',
+    port: 0,
+    hostForward: '',
+    portForward: 0,
+  },
+  sam: {
+    host: '127.0.0.1',
+    portTCP: 7656,
+    portUDP: 7655,
+    versionMin: '',
+    versionMax: '',
+    publicKey: '',
+    privateKey: '',
+  },
 };
 ```
 

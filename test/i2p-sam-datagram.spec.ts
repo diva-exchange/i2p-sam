@@ -37,7 +37,7 @@ class TestI2pSamDatagram {
         address: SAM_LISTEN_ADDRESS,
         port: SAM_LISTEN_PORT,
         hostForward: SAM_LISTEN_FORWARD,
-        onMessage: (msg: Buffer) => {
+        onData: (msg: Buffer) => {
           messageCounterA++;
           arrayPerformanceA.push(Date.now() - Number(msg.toString()));
         },
@@ -55,7 +55,7 @@ class TestI2pSamDatagram {
         address: SAM_LISTEN_ADDRESS,
         port: SAM_LISTEN_PORT + 1,
         hostForward: SAM_LISTEN_FORWARD,
-        onMessage: (msg: Buffer) => {
+        onData: (msg: Buffer) => {
           messageCounterB++;
           arrayPerformanceB.push(Date.now() - Number(msg.toString()));
         },
