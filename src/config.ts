@@ -14,7 +14,6 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  silent?: boolean;
   onData?: Function;
 };
 
@@ -64,7 +63,6 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
-    silent: false,
   },
   forward: {
     host: '',
