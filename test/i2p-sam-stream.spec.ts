@@ -27,6 +27,7 @@ class TestI2pSamStream {
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
       stream: {
         destination: 'diva.i2p',
+        silent: true,
         onData: () => {
           messageCounter++;
         },
@@ -70,6 +71,7 @@ class TestI2pSamStream {
       forward: {
         host: SAM_FORWARD_HOST,
         port: SAM_FORWARD_PORT,
+        silent: true,
       },
     });
 
