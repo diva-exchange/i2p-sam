@@ -14,12 +14,14 @@ type tSession = {
 
 type tStream = {
   destination: string;
+  silent: boolean;
   onData?: Function;
 };
 
 type tForward = {
   host: string;
   port: number;
+  silent: boolean;
 };
 
 type tListen = {
@@ -62,10 +64,12 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
+    silent: false,
   },
   forward: {
     host: '',
     port: 0,
+    silent: false,
   },
   listen: {
     address: '127.0.0.1',

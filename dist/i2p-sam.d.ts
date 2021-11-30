@@ -10,6 +10,7 @@ export declare class I2pSam extends EventEmitter {
   private privateKey;
   protected internalEventEmitter: EventEmitter;
   static createStream(c: Configuration): Promise<I2pSamStream>;
+  static createForward(c: Configuration): Promise<I2pSamStream>;
   static createDatagram(c: Configuration): Promise<I2pSamDatagram>;
   static createRaw(c: Configuration): Promise<I2pSamRaw>;
   protected constructor(c: Configuration);
@@ -40,6 +41,7 @@ export * from './i2p-sam-stream';
 export * from './i2p-sam-datagram';
 export * from './i2p-sam-raw';
 export declare const createStream: typeof I2pSam.createStream;
+export declare const createForward: typeof I2pSam.createForward;
 export declare const createDatagram: typeof I2pSam.createDatagram;
 export declare const createRaw: typeof I2pSam.createRaw;
 export declare const toB32: typeof I2pSam.toB32;

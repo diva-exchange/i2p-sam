@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.lookup = exports.createLocalDestination = exports.toB32 = exports.createRaw = exports.createDatagram = exports.createStream = exports.I2pSam = void 0;
+exports.lookup = exports.createLocalDestination = exports.toB32 = exports.createRaw = exports.createDatagram = exports.createForward = exports.createStream = exports.I2pSam = void 0;
 const rfc4648_1 = require("rfc4648");
 const crypto_1 = __importDefault(require("crypto"));
 const events_1 = require("events");
@@ -41,6 +41,9 @@ class I2pSam extends events_1.EventEmitter {
         this.internalEventEmitter = new events_1.EventEmitter();
     }
     static async createStream(c) {
+        return await i2p_sam_1.I2pSamStream.make(c);
+    }
+    static async createForward(c) {
         return await i2p_sam_1.I2pSamStream.make(c);
     }
     static async createDatagram(c) {
@@ -216,6 +219,7 @@ __exportStar(require("./i2p-sam-stream"), exports);
 __exportStar(require("./i2p-sam-datagram"), exports);
 __exportStar(require("./i2p-sam-raw"), exports);
 exports.createStream = I2pSam.createStream;
+exports.createForward = I2pSam.createForward;
 exports.createDatagram = I2pSam.createDatagram;
 exports.createRaw = I2pSam.createRaw;
 exports.toB32 = I2pSam.toB32;

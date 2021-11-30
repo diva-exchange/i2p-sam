@@ -80,7 +80,7 @@ class TestI2pSamStream {
     while (!Object.keys(i2pSender).length) {
       try {
         i2pSender = await createStream({
-          sam: {host: SAM_HOST, portTCP: SAM_PORT_TCP},
+          sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
           stream: {
             destination: destination,
             onData: (data: Buffer) => {
