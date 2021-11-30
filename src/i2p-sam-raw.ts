@@ -48,7 +48,7 @@ export class I2pSamRaw extends I2pSam {
       }
     });
     this.socketListen.on('close', () => {
-      this.emit('listen-close');
+      this.emit('close');
     });
 
     return new Promise((resolve, reject) => {
