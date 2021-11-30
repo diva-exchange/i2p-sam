@@ -9,7 +9,6 @@ const DEFAULT_CONFIGURATION = {
     },
     stream: {
         destination: '',
-        silent: false,
     },
     forward: {
         host: '',

@@ -3,7 +3,6 @@ declare type tSession = {
 };
 declare type tStream = {
   destination: string;
-  silent?: boolean;
   onData?: Function;
 };
 declare type tForward = {

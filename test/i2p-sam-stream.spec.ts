@@ -4,7 +4,7 @@
  * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
  */
 
-import {slow, suite, test, timeout} from '@testdeck/mocha';
+import { slow, suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import { createStream, createForward, I2pSamStream, toB32 } from '../src/i2p-sam';
 import net from 'net';
