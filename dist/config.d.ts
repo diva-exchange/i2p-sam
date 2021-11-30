@@ -3,13 +3,13 @@ declare type tSession = {
 };
 declare type tStream = {
   destination: string;
-  silent: boolean;
+  silent?: boolean;
   onData?: Function;
 };
 declare type tForward = {
   host: string;
   port: number;
-  silent: boolean;
+  silent?: boolean;
 };
 declare type tListen = {
   address: string;

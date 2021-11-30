@@ -14,14 +14,14 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  silent: boolean;
+  silent?: boolean;
   onData?: Function;
 };
 
 type tForward = {
   host: string;
   port: number;
-  silent: boolean;
+  silent?: boolean;
 };
 
 type tListen = {
