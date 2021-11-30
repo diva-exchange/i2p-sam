@@ -409,11 +409,8 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 ```
 
 
-#### control-close
-Emitted if the SAM control socket got closed.  
-
-#### stream-close
-Emitted if the stream socket got closed.  
+#### close
+Emitted if one of the involved sockets got closed.  
 
 
 ## How to Run Unit Tests

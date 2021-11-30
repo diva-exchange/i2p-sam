@@ -42,7 +42,7 @@ export class I2pSamStream extends I2pSam {
       }
     });
     this.socketStream.on('close', () => {
-      this.emit('stream-close');
+      this.emit('close');
     });
 
     this.socketStream.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {

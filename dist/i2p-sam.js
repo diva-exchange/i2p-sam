@@ -58,7 +58,7 @@ class I2pSam extends events_1.EventEmitter {
             this.parseReply(data);
         });
         this.socketControl.on('close', () => {
-            this.emit('control-close');
+            this.emit('close');
         });
         try {
             await new Promise((resolve, reject) => {
