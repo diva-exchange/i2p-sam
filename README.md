@@ -308,7 +308,7 @@ Example: see the _Get Started: How to Use Streams_ above.
 
 Example: see _Get Started: How to Use Datagrams_ above. 
 
-### Configuration / Options
+### Configuration and its Defaults
 ```
 type tSession = {
   id?: string;
@@ -322,6 +322,7 @@ type tStream = {
 type tForward = {
   host: string;
   port: number;
+  silent?: boolean;
 };
 
 type tListen = {
@@ -368,6 +369,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   forward: {
     host: '',
     port: 0,
+    silent: false,
   },
   listen: {
     address: '127.0.0.1',

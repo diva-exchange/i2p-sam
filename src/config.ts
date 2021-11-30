@@ -20,6 +20,7 @@ type tStream = {
 type tForward = {
   host: string;
   port: number;
+  silent?: boolean;
 };
 
 type tListen = {
@@ -66,6 +67,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   forward: {
     host: '',
     port: 0,
+    silent: false,
   },
   listen: {
     address: '127.0.0.1',

@@ -8,6 +8,7 @@ declare type tStream = {
 declare type tForward = {
   host: string;
   port: number;
+  silent?: boolean;
 };
 declare type tListen = {
   address: string;

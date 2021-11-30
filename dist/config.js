@@ -13,6 +13,7 @@ const DEFAULT_CONFIGURATION = {
     forward: {
         host: '',
         port: 0,
+        silent: false,
     },
     listen: {
         address: '127.0.0.1',

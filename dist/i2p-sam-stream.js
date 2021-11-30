@@ -60,9 +60,15 @@ class I2pSamStream extends i2p_sam_1.I2pSam {
                 this.hasStream = true;
                 resolve();
             });
-            let s = `STREAM FORWARD SILENT=false ID=${this.config.session.id} PORT=${this.portForward} HOST=${this.hostForward}\n`;
+            let s = '';
             if (this.destination) {
                 s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
+            }
+            else {
+                s =
+                    'STREAM FORWARD ' +
+                        `SILENT=${this.config.forward.silent ? 'true' : 'false'} ` +
+                        `ID=${this.config.session.id} PORT=${this.portForward} HOST=${this.hostForward}\n`;
             }
             this.socketStream.write(s, (error) => {
                 error && this.internalEventEmitter.emit('error', error);
