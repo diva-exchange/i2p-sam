@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "3.1.0",
+  "version": "4.0.0",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "main": "dist/i2p-sam.js",
   "keywords": [
@@ -35,7 +35,7 @@
     "rfc4648": "^1.5.0"
   },
   "devDependencies": {
-    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@testdeck/mocha": "^0.2.0",
     "@tsconfig/node14": "^1.0.1",
     "@types/chai": "^4.2.22",

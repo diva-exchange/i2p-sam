@@ -14,7 +14,6 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  onData?: Function;
 };
 
 type tForward = {
@@ -28,7 +27,6 @@ type tListen = {
   port: number;
   hostForward?: string;
   portForward?: number;
-  onData?: Function;
 };
 
 type tSam = {

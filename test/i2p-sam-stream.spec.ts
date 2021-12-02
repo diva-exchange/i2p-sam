@@ -28,19 +28,21 @@ class TestI2pSamStream {
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
       stream: {
         destination: 'diva.i2p',
-        onData: () => {
-          messageCounter++;
-        },
       },
+    });
+    i2pSender.on('data', () => {
+      messageCounter++;
     });
 
     console.log('Start streaming data...');
+    console.log(Date.now());
 
     // send some data to diva.i2p
     i2pSender.stream(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
     while (!messageCounter) {
-      await TestI2pSamStream.wait(1000);
+      await TestI2pSamStream.wait(500);
     }
+    console.log(Date.now());
 
     i2pSender.close();
 
@@ -86,10 +88,10 @@ class TestI2pSamStream {
           sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
           stream: {
             destination: destination,
-            onData: () => {
-              messageCounter++;
-            },
           },
+        });
+        i2pSender.on('data', () => {
+          messageCounter++;
         });
       } catch (error: any) {
         console.debug(error.toString());
@@ -97,11 +99,14 @@ class TestI2pSamStream {
     }
 
     console.log('Start streaming data...');
-    while (messageCounter < 5) {
-      // send some data to destination
+    const start = Date.now();
+    // send some data to destination
+    const amount = 5;
+    while (messageCounter < amount) {
       i2pSender.stream(Buffer.from(`GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`));
-      await TestI2pSamStream.wait(2000);
+      await TestI2pSamStream.wait(500);
     }
+    console.log(`${(Date.now() - start) / amount} milliseconds per roundtrip`);
 
     i2pForward.close();
     i2pSender.close();

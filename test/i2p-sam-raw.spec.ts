@@ -31,62 +31,61 @@ class TestI2pSamRaw {
     let destinationRecipient = '';
 
     console.log('Creating Sender...');
-    let i2pSender: I2pSamRaw = {} as I2pSamRaw;
-    createRaw({
-      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
-      listen: {
-        address: SAM_LISTEN_ADDRESS,
-        port: SAM_LISTEN_PORT,
-        hostForward: SAM_LISTEN_FORWARD,
-        onData: (msg: Buffer) => {
-          messageCounterA++;
-          arrayPerformanceA.push(Date.now() - Number(msg.toString()));
+    const i2pSender: I2pSamRaw = (
+      await createRaw({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
+        listen: {
+          address: SAM_LISTEN_ADDRESS,
+          port: SAM_LISTEN_PORT,
+          hostForward: SAM_LISTEN_FORWARD,
         },
-      },
-    }).then((s) => {
-      i2pSender = s;
-      destinationSender = i2pSender.getPublicKey();
+      })
+    ).on('data', (msg: Buffer) => {
+      messageCounterA++;
+      arrayPerformanceA.push(Date.now() - Number(msg.toString()));
     });
+    destinationSender = i2pSender.getPublicKey();
 
     console.log('Creating Recipient...');
-    let i2pRecipient: I2pSamRaw = {} as I2pSamRaw;
-    createRaw({
-      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
-      listen: {
-        address: SAM_LISTEN_ADDRESS,
-        port: SAM_LISTEN_PORT + 1,
-        hostForward: SAM_LISTEN_FORWARD,
-        onData: (msg: Buffer) => {
-          messageCounterB++;
-          arrayPerformanceB.push(Date.now() - Number(msg.toString()));
+    const i2pRecipient: I2pSamRaw = (
+      await createRaw({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
+        listen: {
+          address: SAM_LISTEN_ADDRESS,
+          port: SAM_LISTEN_PORT + 1,
+          hostForward: SAM_LISTEN_FORWARD,
         },
-      },
-    }).then((r) => {
-      i2pRecipient = r;
-      destinationRecipient = i2pRecipient.getPublicKey();
+      })
+    ).on('data', (msg: Buffer) => {
+      messageCounterB++;
+      arrayPerformanceB.push(Date.now() - Number(msg.toString()));
     });
+    destinationRecipient = i2pRecipient.getPublicKey();
 
     console.log('Start sending data...');
+    console.log(Date.now());
+    let sentMsgs = 0;
     const intervalSender = setInterval(async () => {
-      destinationSender &&
-        destinationRecipient &&
-        i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
-    }, 1000);
+      i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
+      sentMsgs++;
+    }, 50);
 
     const intervalRecipient = setInterval(async () => {
-      destinationSender &&
-        destinationRecipient &&
-        i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));
-    }, 1000);
+      i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));
+      sentMsgs++;
+    }, 50);
 
-    while (messageCounterA < 10 || messageCounterB < 10) {
-      await TestI2pSamRaw.wait(1000);
+    while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
+      await TestI2pSamRaw.wait(100);
     }
+    console.log(Date.now());
+    console.log('Total Sent: ' + sentMsgs);
+    console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsgs) * 1000) / 10 + '%');
 
     clearInterval(intervalSender);
-    destinationSender && i2pSender.close();
     clearInterval(intervalRecipient);
-    destinationRecipient && i2pRecipient.close();
+    i2pSender.close();
+    i2pRecipient.close();
 
     console.log('messageCounterA ' + messageCounterA);
     console.log(arrayPerformanceA);

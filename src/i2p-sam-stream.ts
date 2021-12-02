@@ -36,7 +36,7 @@ export class I2pSamStream extends I2pSam {
     this.socketStream = new Socket();
     this.socketStream.on('data', (data: Buffer) => {
       if (this.hasStream) {
-        this.config.stream.onData && this.config.stream.onData(data);
+        this.emit('data', data);
       } else {
         this.parseReply(data);
       }

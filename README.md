@@ -17,16 +17,16 @@ import { createStream } from '@diva.exchange/i2p-sam';
 
 createStream({
   stream: {
-    destination: 'diva.i2p',
-    onData: (data: Buffer) => {
-      console.log('Incoming Data: ' + data.toString());
-    },
+    destination: 'diva.i2p'
   },
   sam: {
     host: 127.0.0.1,            # your local I2P SAM host
     portTCP: 7656               # your local I2P SAM port
   },
 }).then((sam) => {
+  sam.on('data', (data: Buffer) => {
+    console.log('Incoming Data: ' + data.toString());
+  });
   sam.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
 });
 ```
@@ -67,13 +67,13 @@ import net from 'net';
       portTCP: 7656             # your local I2P SAM port
     },
     stream: {
-      destination: samForward.getPublicKey(),
-      onData: (data: Buffer) => {
-        console.debug(data.toString());
-      },
+      destination: samForward.getPublicKey()
     },
   });
-
+  // event handler
+  samClient.on('data', (data: Buffer) => {
+    console.debug(data.toString());
+  });
   // send some data to destination
   samClient.stream(Buffer.from(`Hi Server!\n`));
 })();
@@ -103,20 +103,20 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
     },
     listen: { 
       address: 127.0.0.1,         # udp listener
-      port: 20202,                # udp listener
-      onData: (data: Buffer, fromDestination) => {
-        console.debug(`Incoming Data from ${toB32(fromDestination)}: ${data.toString()}`);
-      }
+      port: 20202                 # udp listener
     }
-  }); 
-  
+  }).on('data', (data: Buffer, from) => {
+    console.debug(`Incoming Data from ${toB32(from)}: ${data.toString()}`);
+  });
+
+    
   // send 100 messages via UDP, every 500ms a message
   // IMPORTANT: UDP is not reliable. Some messages might get lost.
   const msg: string = 'Hello World';
   await new Promise((resolve) => {
     let t = 0;
-    const i = setInterval(async () => {
-      await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+    const i = setInterval(() => {
+      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
       if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
@@ -150,20 +150,19 @@ import { createRaw } from '@diva.exchange/i2p-sam';
     },
     listen: { 
       address: 127.0.0.1,         # udp listener
-      port: 20202,                # udp listener
-      onData: (data: Buffer) => {
-        console.log('Incoming Data: ' + data.toString());
-      }
+      port: 20202                 # udp listener
     }
-  }); 
-  
+  }).on('data', (data: Buffer) => {
+    console.log('Incoming Data: ' + data.toString());
+  });
+
   // send 100 messages via UDP, every 500ms a message
   // IMPORTANT: UDP is not reliable. Some messages might get lost.
   const msg: string = 'Hello Peer B - I am Peer A';
   await new Promise((resolve) => {
     let t = 0;
-    const i = setInterval(async () => {
-      await peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+    const i = setInterval(() => {
+      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
       if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
@@ -316,7 +315,6 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  onData?: Function;
 };
 
 type tForward = {
@@ -330,7 +328,6 @@ type tListen = {
   port: number;
   hostForward?: string;
   portForward?: number;
-  onData?: Function;
 };
 
 type tSam = {
@@ -390,6 +387,9 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
 ```
 
 ### Events
+
+#### data
+Incoming data.
 
 #### error
 Generic Error event - emitted if sockets report errors.
