@@ -88,14 +88,18 @@ export class I2pSamRaw extends I2pSam {
         return this.emit('error', new Error('I2pSamRaw.send(): message length > MAX_UDP_MESSAGE_LENGTH'));
       }
 
-      this.socketControlUDP.send(
-        `3.0 ${this.config.session.id} ${destination}\n` + s,
-        this.config.sam.portUDP,
-        this.config.sam.host,
-        (error) => {
-          error && this.emit('error', error);
-        }
-      );
+      try {
+        this.socketControlUDP.send(
+          `3.0 ${this.config.session.id} ${destination}\n` + s,
+          this.config.sam.portUDP,
+          this.config.sam.host,
+          (error) => {
+            error && this.emit('error', error);
+          }
+        );
+      } catch (error: any) {
+        return this.emit('error', new Error(error.toString()));
+      }
     })(destination, msg);
   }
 }
