@@ -258,9 +258,7 @@ Example:
 ```
 import { toB32 } from '@diva.exchange/i2p-sam';
 
-console.log(
-  toB32('[some base64-encoded destination]');
-);
+console.log(toB32('[some base64-encoded destination]'));
 ```
 
 ### createLocalDestination(c: Configuration): Promise\<{ address: string, public: string, private: string }\>
