@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "main": "dist/i2p-sam.js",
   "keywords": [
@@ -12,7 +12,7 @@
     "diva.exchange"
   ],
   "author": "Konrad Baechler <konrad@diva.exchange> (https://diva.exchange)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://codeberg.org/diva.exchange/i2p-sam.git"
