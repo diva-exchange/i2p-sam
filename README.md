@@ -474,4 +474,4 @@ I2Pd: https://i2pd.readthedocs.io/
 
 ## License
 
-[MIT](https://codeberg.org/diva.exchange/i2p-sam/src/branch/main/LICENSE)
+[APACHE 2.0](https://codeberg.org/diva.exchange/i2p-sam/src/branch/main/LICENSE)
