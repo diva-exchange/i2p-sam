@@ -429,12 +429,12 @@ Check whether the I2P test node is properly running by accessing the local conso
 
 To modify the IP address of the local console, adapt the file `test/sam.diva.i2p.yml`.
 
-After the docker container is running for two or three minutes (reason: the I2P network needs some minutes to integrate), execute the unit tests:
+After the docker container is _running for about five minutes_ (reason: the I2P network needs some minutes to integrate), execute the unit tests:
 
 ```
 npm run test
 ```
-Executing the unit tests will take a few minutes. Reason: the communication via I2P gets tested - which is the purpose of this library.
+Executing the unit tests will take around 5 minutes. Reason: the communication via I2P gets tested - which is the purpose of this library.
 
 Stop the container (and purge all data within):
 ```
