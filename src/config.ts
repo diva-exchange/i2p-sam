@@ -22,6 +22,7 @@ const DEFAULT_LENGTH_SESSION = 16;
 
 type tSession = {
   id?: string;
+  options?: string;
 };
 
 type tStream = {
@@ -70,6 +71,7 @@ type ConfigurationDefault = {
 const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   session: {
     id: '',
+    options: '',
   },
   stream: {
     destination: '',

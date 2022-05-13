@@ -309,6 +309,7 @@ Example: see _Get Started: How to Use Datagrams_ above.
 ```
 type tSession = {
   id?: string;
+  options?: string;
 };
 
 type tStream = {
@@ -357,6 +358,7 @@ type ConfigurationDefault = {
 const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   session: {
     id: '',
+    options: '',
   },
   stream: {
     destination: '',

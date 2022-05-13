@@ -126,11 +126,11 @@ export class I2pSam extends EventEmitter {
       let s = `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
       switch (type) {
         case 'STREAM':
-          s += 'STYLE=STREAM\n';
+          s += 'STYLE=STREAM';
           break;
         case 'DATAGRAM':
         case 'RAW':
-          s += `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}\n`;
+          s += `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}`;
           break;
       }
 
@@ -138,6 +138,7 @@ export class I2pSam extends EventEmitter {
       this.internalEventEmitter.once('error', reject);
       this.internalEventEmitter.once('session', resolve);
 
+      s += (this.config.session.options ? ' ' + this.config.session.options : '') + '\n';
       this.socketControl.write(s, (error) => {
         error && reject(error);
       });

@@ -20,7 +20,7 @@ const SAM_LISTEN_FORWARD = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 @suite
 class TestI2pSamRaw {
   @test
-  @timeout(120000)
+  @timeout(180000)
   async send() {
     let messageCounterA = 0;
     let messageCounterB = 0;
@@ -33,6 +33,7 @@ class TestI2pSamRaw {
     console.log('Creating Sender...');
     const i2pSender: I2pSamRaw = (
       await createRaw({
+        session: { options: 'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false' },
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
           address: SAM_LISTEN_ADDRESS,
@@ -49,6 +50,7 @@ class TestI2pSamRaw {
     console.log('Creating Recipient...');
     const i2pRecipient: I2pSamRaw = (
       await createRaw({
+        session: { options: 'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false' },
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
           address: SAM_LISTEN_ADDRESS,
