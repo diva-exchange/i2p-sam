@@ -1,4 +1,6 @@
 /// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
 import { EventEmitter } from 'events';
 import { Config, Configuration } from './config';
 import { Socket } from 'net';

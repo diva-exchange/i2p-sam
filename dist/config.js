@@ -6,6 +6,7 @@ const DEFAULT_LENGTH_SESSION = 16;
 const DEFAULT_CONFIGURATION = {
     session: {
         id: '',
+        options: '',
     },
     stream: {
         destination: '',

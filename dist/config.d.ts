@@ -1,5 +1,6 @@
 declare type tSession = {
   id?: string;
+  options?: string;
 };
 declare type tStream = {
   destination: string;
