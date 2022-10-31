@@ -131,7 +131,7 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
   await new Promise((resolve) => {
     let t = 0;
     const i = setInterval(() => {
-      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`));
       if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
@@ -152,7 +152,7 @@ import { createRaw } from '@diva.exchange/i2p-sam';
   // instantiate Peer A
   const peerA = await createRaw({
     sam: {
-      host: '127.0.0.1',            # your local I2P SAM host
+      host: '127.0.0.1',          # your local I2P SAM host
       portTCP: 7656               # your local I2P SAM port
     }
   }); 
@@ -160,7 +160,7 @@ import { createRaw } from '@diva.exchange/i2p-sam';
   // instantiate Peer B
   const peerB = await createRaw({
     sam: {
-      host: '127.0.0.1',            # your local I2P SAM host
+      host: '127.0.0.1',          # your local I2P SAM host
       portTCP: 7656               # your local I2P SAM port
     },
     listen: { 
@@ -177,7 +177,7 @@ import { createRaw } from '@diva.exchange/i2p-sam';
   await new Promise((resolve) => {
     let t = 0;
     const i = setInterval(() => {
-      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`);
+      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`));
       if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
@@ -423,7 +423,6 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 })();
 ```
 
-
 #### close
 Emitted if one of the involved sockets got closed.  
 
@@ -466,22 +465,41 @@ To lint the code, use
 npm run lint
 ```
 
+## Contributions
+Contributions are very welcome. This is the general workflow:
+
+1. Fork from https://github.com/diva-exchange/divachain/
+2. Pull the forked project to your local developer environment
+3. Make your changes, test, commit and push them
+4. Create a new pull request on github.com
+
+It is strongly recommended to sign your commits: https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key
+
+If you have questions, please just contact us (see below).
+
+## Donations
+
+Your donation goes entirely to the project. Your donation makes the development of DIVA.EXCHANGE faster. Thanks a lot.
+
+### XMR
+
+42QLvHvkc9bahHadQfEzuJJx4ZHnGhQzBXa8C9H3c472diEvVRzevwpN7VAUpCPePCiDhehH4BAWh8kYicoSxpusMmhfwgx
+
+![XMR](https://www.diva.exchange/wp-content/uploads/2020/06/diva-exchange-monero-qr-code-1.jpg)
+
+or via https://www.diva.exchange/en/join-in/
+
+### BTC
+
+3Ebuzhsbs6DrUQuwvMu722LhD8cNfhG1gs
+
+![BTC](https://www.diva.exchange/wp-content/uploads/2020/06/diva-exchange-bitcoin-qr-code-1.jpg)
 
 ## Contact the Developers
 
 On [DIVA.EXCHANGE](https://www.diva.exchange) you'll find various options to get in touch with the team.
 
-Talk to us via Telegram [https://t.me/diva_exchange_chat_de]() (English or German).
-
-## Donations
-
-Your donation goes entirely to the project. Your donation makes the development of DIVA.EXCHANGE faster.
-
-XMR: 42QLvHvkc9bahHadQfEzuJJx4ZHnGhQzBXa8C9H3c472diEvVRzevwpN7VAUpCPePCiDhehH4BAWh8kYicoSxpusMmhfwgx
-
-BTC: 3Ebuzhsbs6DrUQuwvMu722LhD8cNfhG1gs
-
-Awesome, thank you!
+Talk to us via [Telegram](https://t.me/diva_exchange_chat_de) (English or German).
 
 ## References
 

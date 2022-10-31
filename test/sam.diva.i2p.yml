@@ -1,14 +1,14 @@
 #
-# MIT License - Copyright (c) 2021 diva.exchange
+# Apache License - Copyright (c) 2021-2022 diva.exchange
 #
-# Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+# Author/Maintainer: DIVA.EXCHANGE Association <contact@diva.exchange>
 #
 
 version: "3.7"
 services:
   sam.diva.i2p:
     container_name: sam.diva.i2p
-    image: divax/i2p:latest
+    image: divax/i2p:current
     restart: unless-stopped
     environment:
       ENABLE_SAM: 1
