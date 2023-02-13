@@ -36,14 +36,6 @@ const KEY_DESTINATION = 'DESTINATION';
 const KEY_VALUE = 'VALUE';
 const VALUE_OK = 'OK';
 class I2pSam extends events_1.EventEmitter {
-    constructor(c) {
-        super();
-        this.socketControl = {};
-        this.config = new config_1.Config(c);
-        this.publicKey = this.config.sam.publicKey || '';
-        this.privateKey = this.config.sam.privateKey || '';
-        this.internalEventEmitter = new events_1.EventEmitter();
-    }
     static async createStream(c) {
         return await i2p_sam_1.I2pSamStream.make(c);
     }
@@ -55,6 +47,14 @@ class I2pSam extends events_1.EventEmitter {
     }
     static async createRaw(c) {
         return await i2p_sam_1.I2pSamRaw.make(c);
+    }
+    constructor(c) {
+        super();
+        this.socketControl = {};
+        this.config = new config_1.Config(c);
+        this.publicKey = this.config.sam.publicKey || '';
+        this.privateKey = this.config.sam.privateKey || '';
+        this.internalEventEmitter = new events_1.EventEmitter();
     }
     async open() {
         this.socketControl = new net_1.Socket();

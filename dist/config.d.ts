@@ -1,22 +1,22 @@
-declare type tSession = {
+type tSession = {
   id?: string;
   options?: string;
 };
-declare type tStream = {
+type tStream = {
   destination: string;
 };
-declare type tForward = {
+type tForward = {
   host: string;
   port: number;
   silent?: boolean;
 };
-declare type tListen = {
+type tListen = {
   address: string;
   port: number;
   hostForward?: string;
   portForward?: number;
 };
-declare type tSam = {
+type tSam = {
   host: string;
   portTCP: number;
   portUDP?: number;
@@ -25,7 +25,7 @@ declare type tSam = {
   publicKey?: string;
   privateKey?: string;
 };
-export declare type Configuration = {
+export type Configuration = {
   session?: tSession;
   stream?: tStream;
   forward?: tForward;
