@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "4.1.7",
+  "version": "4.1.8",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "main": "dist/i2p-sam.js",
   "keywords": [
@@ -40,11 +40,11 @@
     "@tsconfig/node16": "^1.0.3",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.13.0",
-    "@typescript-eslint/eslint-plugin": "^5.51.0",
-    "@typescript-eslint/parser": "^5.51.0",
+    "@types/node": "^18.14.6",
+    "@typescript-eslint/eslint-plugin": "^5.54.0",
+    "@typescript-eslint/parser": "^5.54.0",
     "chai": "^4.3.7",
-    "eslint": "^8.34.0",
+    "eslint": "^8.35.0",
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-prettier": "^4.2.1",
     "mocha": "^10.2.0",
