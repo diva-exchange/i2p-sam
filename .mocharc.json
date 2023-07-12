@@ -1,9 +1,7 @@
 {
-  "require": [
-    "ts-node/register"
-    ],
   "reporter": "list",
-  "spec": "test/**/*.spec.ts",
+  "extensions": ["js"],
+  "spec": ["lib-test/**/*.spec.js"],
   "exit": true,
   "bail": false
 }

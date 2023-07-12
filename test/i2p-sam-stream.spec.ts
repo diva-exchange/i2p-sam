@@ -1,13 +1,25 @@
 /**
- * MIT License - Copyright (c) 2021 diva.exchange
+ * Copyright 2021-2023 diva.exchange
  *
- * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
 import { slow, suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { createStream, createForward, I2pSamStream, toB32 } from '../src/i2p-sam';
 import net from 'net';
+import { createForward, createStream, toB32, I2pSamStream } from '../lib/index.js';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP || 7656);
@@ -38,7 +50,7 @@ class TestI2pSamStream {
     console.log(Date.now());
 
     // send some data to diva.i2p
-    i2pSender.stream(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+    i2pSender.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
     while (!messageCounter) {
       await TestI2pSamStream.wait(500);
     }

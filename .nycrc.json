@@ -1,10 +1,9 @@
 {
-  "extends": "@istanbuljs/nyc-config-typescript",
   "include": [
-    "src/**/*.ts"
+    "lib/**/*.js"
   ],
   "extension": [
-    ".ts"
+    ".js"
   ],
   "reporter": [
     "text-summary",

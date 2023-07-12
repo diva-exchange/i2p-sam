@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 diva.exchange
+ * Copyright 2021-2023 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+ * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { I2pSamRaw } from './i2p-sam-raw';
-import { Configuration } from './config';
+import { I2pSamRaw } from './i2p-sam-raw.js';
+import { Configuration } from './config.js';
 
 export class I2pSamDatagram extends I2pSamRaw {
+  static async createDatagram(c: Configuration): Promise<I2pSamDatagram> {
+    return await I2pSamDatagram.make(c);
+  }
+
   static async make(c: Configuration): Promise<I2pSamDatagram> {
-    const r = new I2pSamDatagram(c);
+    const r: I2pSamDatagram = new I2pSamDatagram(c);
     await r.open();
     await r.initSession();
     return r;

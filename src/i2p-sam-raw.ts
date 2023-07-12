@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 diva.exchange
+ * Copyright 2021-2023 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+ * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { I2pSam } from './i2p-sam';
-import { Configuration } from './config';
+import { I2pSam } from './i2p-sam.js';
+import { Configuration } from './config.js';
 import dgram, { Socket } from 'dgram';
 
 const MIN_UDP_MESSAGE_LENGTH = 1;
@@ -27,8 +27,12 @@ export class I2pSamRaw extends I2pSam {
   private socketControlUDP: Socket = {} as Socket; // outgoing
   private socketListen: Socket = {} as Socket; // incoming
 
+  static async createRaw(c: Configuration): Promise<I2pSamRaw> {
+    return await I2pSamRaw.make(c);
+  }
+
   static async make(c: Configuration): Promise<I2pSamRaw> {
-    const r = new I2pSamRaw(c);
+    const r: I2pSamRaw = new I2pSamRaw(c);
     await r.open();
     await r.initSession();
     return r;

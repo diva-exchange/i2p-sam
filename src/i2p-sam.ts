@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 diva.exchange
+ * Copyright 2021-2023 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+ * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
 import { base32 } from 'rfc4648';
 import crypto from 'crypto';
 import { EventEmitter } from 'events';
-import { Config, Configuration } from './config';
+import { Config, Configuration } from './config.js';
 import { Socket } from 'net';
-import { I2pSamDatagram, I2pSamRaw, I2pSamStream } from './i2p-sam';
 
 const REPLY_HELLO = 'HELLOREPLY';
 const REPLY_DEST = 'DESTREPLY';
@@ -46,22 +45,6 @@ export class I2pSam extends EventEmitter {
   private privateKey: string;
 
   protected internalEventEmitter: EventEmitter;
-
-  static async createStream(c: Configuration): Promise<I2pSamStream> {
-    return await I2pSamStream.make(c);
-  }
-
-  static async createForward(c: Configuration): Promise<I2pSamStream> {
-    return await I2pSamStream.make(c);
-  }
-
-  static async createDatagram(c: Configuration): Promise<I2pSamDatagram> {
-    return await I2pSamDatagram.make(c);
-  }
-
-  static async createRaw(c: Configuration): Promise<I2pSamRaw> {
-    return await I2pSamRaw.make(c);
-  }
 
   protected constructor(c: Configuration) {
     super();
@@ -258,15 +241,3 @@ export class I2pSam extends EventEmitter {
     return s;
   }
 }
-
-export * from './i2p-sam-stream';
-export * from './i2p-sam-datagram';
-export * from './i2p-sam-raw';
-
-export const createStream = I2pSam.createStream;
-export const createForward = I2pSam.createForward;
-export const createDatagram = I2pSam.createDatagram;
-export const createRaw = I2pSam.createRaw;
-export const toB32 = I2pSam.toB32;
-export const createLocalDestination = I2pSam.createLocalDestination;
-export const lookup = I2pSam.lookup;

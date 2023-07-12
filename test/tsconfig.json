@@ -1,8 +1,11 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "declaration": false,
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "outDir": "../lib-test",
+    "sourceMap": false
   },
   "include": [
     "./**/*.spec.ts"

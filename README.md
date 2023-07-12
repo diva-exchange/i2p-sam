@@ -1,5 +1,7 @@
 # I2P SAM
-An I2P SAM library: enabling applications to communicate through the I2P network. I2P is a fully distributed, "privacy-by-design" network.
+An I2P SAM library: enabling applications to communicate through the I2P network. 
+
+Long story short: I2P is an anonymous network layer allowing censorship-resistant and end-to-end-encrypted communication. I2P is a fully distributed, "privacy-by-design" peer-to-peer network.
 
 To get I2P up and running, take a look at the project: https://github.com/diva-exchange/i2p
 
@@ -35,14 +37,18 @@ createStream({
     destination: 'diva.i2p'
   },
   sam: {
-    host: '127.0.0.1',          # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
+    // your local I2P SAM host,
+    // like 172.19.74.11 if you use the given test
+    // docker container (see "Unit Tests" below)
+    host: '127.0.0.1',
+    // your local I2P SAM port, this is the default
+    portTCP: 7656
   },
 }).then((sam) => {
   sam.on('data', (data: Buffer) => {
     console.log('Incoming Data: ' + data.toString());
   });
-  sam.send(Buffer.from('GET / HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+  sam.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
 });
 ```
 
@@ -63,23 +69,23 @@ import net from 'net';
       c.write(`Hello Client!\n`);
     });
   });
-  serverForward.listen(20222, '127.0.0.1');
+  serverForward.listen(20222, '127.0.0.2');
 
   const samForward: I2pSamStream = await createForward({
     sam: { 
-      host: '127.0.0.1',      # your local I2P SAM host
-      portTCP: 7656           # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     },
     forward: {
-      host: '127.0.0.1',      # your local listener, see above
-      port: 20222,            # your local listener, see above
+      host: '127.0.0.2',  // your local listener, see above
+      port: 20222,        // your local listener, see above
     },
   });
 
   const samClient: I2pSamStream = await createStream({
     sam: { 
-      host: '127.0.0.1',        # your local I2P SAM host
-      portTCP: 7656             # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     },
     stream: {
       destination: samForward.getPublicKey()
@@ -94,9 +100,13 @@ import net from 'net';
 })();
 ```
 
-### How to Use Repliable Datagrams
+### How to Use Reply-able Datagrams
 
-Send messages from peer **A** to peer **B** through the I2P network:
+NOTE: reply-able datagrams contain the origin of the data. An "origin" is defined as the public key of a node in the I2P network. 
+
+NOTE: the example below does not implement any UDP listener and hence the UDP messages are lost. On Linux, you could create a local UDP listener like this: `netcat -ul 20202`. Or take a look at the "streaming" examples above, which do contain a listening socket server.
+
+Send reply-able UDP messages from peer **A** to peer **B** through the I2P network:
 
 ```
 import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
@@ -105,20 +115,20 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
   // instantiate Peer A
   const peerA = await createDatagram({
     sam: {
-      host: '127.0.0.1',          # your local I2P SAM host
-      portTCP: 7656               # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     }
   }); 
   
   // instantiate Peer B
   const peerB = await createDatagram({
     sam: {
-      host: '127.0.0.1',          # your local I2P SAM host
-      portTCP: 7656               # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     },
     listen: { 
-      address: '127.0.0.1',       # udp listener
-      port: 20202                 # udp listener
+      address: '127.0.0.1',  // udp listener
+      port: 20202            // udp listener
     }
   }).on('data', (data: Buffer, from) => {
     console.debug(`Incoming Data from ${toB32(from)}: ${data.toString()}`);
@@ -143,7 +153,11 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
 
 ### How to Use Raw Datagrams
 
-Send messages from peer **A** to peer **B** through the I2P network:
+NOTE: raw datagrams do not contain the "origin" of the data. A typical use case for raw datagrams: broadcasting of data. Raw datagrams are lean.
+
+NOTE: the example below does not implement any UDP listener and hence the UDP messages are lost. On Linux, you could create a local UDP listener like this: `netcat -ul 20202`. Or take a look at the "streaming" examples above, which do contain a listening socket server.
+
+Send raw UDP messages from peer **A** to peer **B** through the I2P network:
 
 ```
 import { createRaw } from '@diva.exchange/i2p-sam';
@@ -152,20 +166,20 @@ import { createRaw } from '@diva.exchange/i2p-sam';
   // instantiate Peer A
   const peerA = await createRaw({
     sam: {
-      host: '127.0.0.1',          # your local I2P SAM host
-      portTCP: 7656               # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     }
   }); 
   
   // instantiate Peer B
   const peerB = await createRaw({
     sam: {
-      host: '127.0.0.1',          # your local I2P SAM host
-      portTCP: 7656               # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     },
     listen: { 
-      address: '127.0.0.1',       # udp listener
-      port: 20202                 # udp listener
+      address: '127.0.0.1',  // udp listener
+      port: 20202            // udp listener
     }
   }).on('data', (data: Buffer) => {
     console.log('Incoming Data: ' + data.toString());
@@ -200,8 +214,8 @@ import { createDatagram } from '@diva.exchange/i2p-sam';
 
 createDatagram({
   sam: {
-    host: '127.0.0.1',          # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
+    host: '127.0.0.1',  // your local I2P SAM host
+    portTCP: 7656       // your local I2P SAM port
   }
 }).then((sam) => console.log(sam.getPublicKey()));
 ```
@@ -217,8 +231,8 @@ import { createDatagram } from '@diva.exchange/i2p-sam';
 
 createDatagram({
   sam: {
-    host: '127.0.0.1',          # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
+    host: '127.0.0.1',  // your local I2P SAM host
+    portTCP: 7656       // your local I2P SAM port
   }
 }).then((sam) => console.log(sam.getPrivateKey()));
 ```
@@ -234,8 +248,8 @@ import { createStream } from '@diva.exchange/i2p-sam';
 
 createStream({
   sam: {
-    host: '127.0.0.1',          # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
+    host: '127.0.0.1',  // your local I2P SAM host
+    portTCP: 7656       // your local I2P SAM port
   },
   stream: {
     destination: 'diva.i2p'
@@ -255,8 +269,8 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 (async () => {
   const sam = await createRaw({
     sam: {
-      host: '127.0.0.1',          # your local I2P SAM host
-      portTCP: 7656               # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     }
   });
   
@@ -287,8 +301,8 @@ import { createLocalDestination } from '@diva.exchange/i2p-sam';
 
 createLocalDestination({
   sam: {
-    host: '127.0.0.1',          # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
+    host: '127.0.0.1',  // your local I2P SAM host
+    portTCP: 7656       // your local I2P SAM port
   }
 }).then((obj) => console.log(obj));
 ```
@@ -305,8 +319,8 @@ import { lookup } from '@diva.exchange/i2p-sam';
 
 lookup({
   sam: {
-    host: '127.0.0.1',          # your local I2P SAM host
-    portTCP: 7656               # your local I2P SAM port
+    host: '127.0.0.1',  // your local I2P SAM host
+    portTCP: 7656       // your local I2P SAM port
   }
 }, 'diva.i2p').then((dest) => console.log(dest));
 ```
@@ -415,8 +429,8 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 (async () => {
   const sam = await createRaw({
     sam: {
-      host: '127.0.0.1',          # your local I2P SAM host
-      portTCP: 7656               # your local I2P SAM port
+      host: '127.0.0.1',  // your local I2P SAM host
+      portTCP: 7656       // your local I2P SAM port
     }
   });
   sam.on('error', (error) => console.debug(error));
@@ -438,7 +452,7 @@ Clone the source code from git `git clone https://github.com/diva-exchange/i2p-s
 Prepare the test environment by creating the docker container:
 
 ```
-docker-compose -f test/sam.diva.i2p.yml up -d
+docker compose -f test/sam.diva.i2p.yml up -d
 ```
 
 Check whether the I2P test node is properly running by accessing the local console on: http://172.19.74.11:7070.
@@ -454,7 +468,7 @@ Executing the unit tests will take around 5 minutes. Reason: the communication v
 
 Stop the container (and purge all data within):
 ```
-docker-compose -f test/sam.diva.i2p.yml down --volumes
+docker compose -f test/sam.diva.i2p.yml down --volumes
 ```
  
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 diva.exchange
+ * Copyright 2021-2023 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Author/Maintainer: Konrad Bächler <konrad@diva.exchange>
+ * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
 import { Socket } from 'net';
-import { I2pSam } from './i2p-sam';
-import { Configuration } from './config';
+import { I2pSam } from './i2p-sam.js';
+import { Configuration } from './config.js';
 
 export class I2pSamStream extends I2pSam {
   private socketStream: Socket = {} as Socket;
@@ -27,8 +27,16 @@ export class I2pSamStream extends I2pSam {
   private portForward: number = 0;
   private hasStream: boolean = false;
 
+  static async createStream(c: Configuration): Promise<I2pSamStream> {
+    return await I2pSamStream.make(c);
+  }
+
+  static async createForward(c: Configuration): Promise<I2pSamStream> {
+    return await I2pSamStream.make(c);
+  }
+
   static async make(c: Configuration): Promise<I2pSamStream> {
-    const r = new I2pSamStream(c);
+    const r: I2pSamStream = new I2pSamStream(c);
     await r.open();
     await r.initSession('STREAM');
     await r.connect();
@@ -82,7 +90,7 @@ export class I2pSamStream extends I2pSam {
         resolve();
       });
 
-      let s = '';
+      let s: string;
       if (this.destination) {
         s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
       } else {
