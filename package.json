@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "type": "module",
   "exports": {
@@ -26,9 +26,11 @@
   "scripts": {
     "build": "npm run clean && npm i && tsc && npm run lint",
     "clean": "rm -rf lib/*",
-    "clean-test": "rm -rf lib-test/*",
+    "clean-test": "rm -rf test/compiled-lib/*",
+    "clean-benchmark": "rm -rf test/compiled-benchmark/*",
     "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
-    "test": "npm run build && npm run clean-test && tsc -p ./test/tsconfig.json && c8 mocha",
+    "test": "npm run build && npm run clean-test && tsc -p ./test/lib/tsconfig.json && c8 mocha",
+    "benchmark": "npm run clean-benchmark && tsc -p ./test/benchmark/tsconfig.json && node test/compiled-benchmark/*.js",
     "prepublishOnly": "npm run build"
   },
   "engines": {

@@ -18,7 +18,7 @@
 
 import { suite, test } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { Config, Configuration } from '../lib/index.js';
+import { Config, Configuration } from '../../lib/index.js';
 
 @suite
 class TestConfig {

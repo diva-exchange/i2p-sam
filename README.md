@@ -104,8 +104,6 @@ import net from 'net';
 
 NOTE: reply-able datagrams contain the origin of the data. An "origin" is defined as the public key of a node in the I2P network. 
 
-NOTE: the example below does not implement any UDP listener and hence the UDP messages are lost. On Linux, you could create a local UDP listener like this: `netcat -ul 20202`. Or take a look at the "streaming" examples above, which do contain a listening socket server.
-
 Send reply-able UDP messages from peer **A** to peer **B** through the I2P network:
 
 ```
@@ -154,8 +152,6 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
 ### How to Use Raw Datagrams
 
 NOTE: raw datagrams do not contain the "origin" of the data. A typical use case for raw datagrams: broadcasting of data. Raw datagrams are lean.
-
-NOTE: the example below does not implement any UDP listener and hence the UDP messages are lost. On Linux, you could create a local UDP listener like this: `netcat -ul 20202`. Or take a look at the "streaming" examples above, which do contain a listening socket server.
 
 Send raw UDP messages from peer **A** to peer **B** through the I2P network:
 

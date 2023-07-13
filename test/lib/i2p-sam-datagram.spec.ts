@@ -18,7 +18,7 @@
 
 import { suite, test, slow, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { createDatagram, I2pSamDatagram } from '../lib/index.js';
+import { createDatagram, I2pSamDatagram } from '../../lib/index.js';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP) || 7656;
@@ -35,8 +35,6 @@ class TestI2pSamDatagram {
   async send() {
     let messageCounterA = 0;
     let messageCounterB = 0;
-    const arrayPerformanceA: Array<number> = [];
-    const arrayPerformanceB: Array<number> = [];
 
     let destinationSender = '';
     let destinationRecipient = '';
@@ -51,9 +49,8 @@ class TestI2pSamDatagram {
           hostForward: SAM_LISTEN_FORWARD,
         },
       })
-    ).on('data', (msg: Buffer) => {
+    ).on('data', () => {
       messageCounterA++;
-      arrayPerformanceA.push(Date.now() - Number(msg.toString()));
     });
     destinationSender = i2pSender.getPublicKey();
 
@@ -67,14 +64,12 @@ class TestI2pSamDatagram {
           hostForward: SAM_LISTEN_FORWARD,
         },
       })
-    ).on('data', (msg: Buffer) => {
+    ).on('data', () => {
       messageCounterB++;
-      arrayPerformanceB.push(Date.now() - Number(msg.toString()));
     });
     destinationRecipient = i2pRecipient.getPublicKey();
 
-    console.log('Start sending data...');
-    console.log(Date.now());
+    console.log(Date.now() + ' - start sending data...');
     let sentMsgs = 0;
     const intervalSender = setInterval(async () => {
       i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
@@ -89,19 +84,13 @@ class TestI2pSamDatagram {
     while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
       await TestI2pSamDatagram.wait(100);
     }
-    console.log(Date.now());
-    console.log('Total Sent: ' + sentMsgs);
+    console.log(Date.now() + ' - total Sent: ' + sentMsgs);
     console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsgs) * 1000) / 10 + '%');
 
     clearInterval(intervalSender);
     clearInterval(intervalRecipient);
     i2pSender.close();
     i2pRecipient.close();
-
-    console.log('messageCounterA ' + messageCounterA);
-    console.log(arrayPerformanceA);
-    console.log('messageCounterB ' + messageCounterB);
-    console.log(arrayPerformanceB);
 
     expect(messageCounterA).not.to.be.equal(0);
     expect(messageCounterB).not.to.be.equal(0);

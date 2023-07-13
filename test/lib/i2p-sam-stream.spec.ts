@@ -19,7 +19,7 @@
 import { slow, suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import net from 'net';
-import { createForward, createStream, toB32, I2pSamStream } from '../lib/index.js';
+import { createForward, createStream, toB32, I2pSamStream } from '../../lib/index.js';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP || 7656);
