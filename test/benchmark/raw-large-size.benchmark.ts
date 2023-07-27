@@ -19,6 +19,7 @@
 import { Configuration, createRaw, I2pSamRaw } from '../../lib/index.js';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP) || 7656;
@@ -27,7 +28,9 @@ const SAM_LISTEN_ADDRESS: string = process.env.SAM_LISTEN_ADDRESS || '0.0.0.0';
 const SAM_LISTEN_PORT: number = Number(process.env.SAM_LISTEN_PORT) || 20222;
 const SAM_LISTEN_FORWARD: string = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 
-class TestI2pSamRawBenchmark {
+const DATA_BYTES: number = 8 * 1024;
+
+class TestRawLargeSizeBenchmark {
   private readonly minutes: number;
   private readonly interval: number; // ms
   private readonly listenPort: number;
@@ -46,7 +49,7 @@ class TestI2pSamRawBenchmark {
     this.optionsSession = optionsSession;
     const now: Date = new Date();
     this.pathCSV = fs.realpathSync(path.dirname(import.meta.url.replace(/^file:\/\//, '')) + '/../data/') + '/';
-    this.pathCSV += `${now.toISOString().replace(/[.\-:]/g, '')}-${listenPort}-Hidden-RawBenchmark.csv`;
+    this.pathCSV += `${now.toISOString().replace(/[.\-:]/g, '')}-${listenPort}-LargeSizeRawBenchmark.csv`;
   }
 
   async run() {
@@ -72,7 +75,7 @@ class TestI2pSamRawBenchmark {
     const i2pSender: I2pSamRaw = (await createRaw(config)).on('data', (msg: Buffer) => {
       messageReceived++;
       const n: number = Date.now();
-      const l: number = n - Number(msg.toString());
+      const l: number = n - Number(msg.toString().substring(0, msg.toString().indexOf('//')));
       arrayPerformance.push(l);
       arrayCSV.push([n, l]);
     });
@@ -83,7 +86,7 @@ class TestI2pSamRawBenchmark {
     const i2pRecipient: I2pSamRaw = (await createRaw(config)).on('data', (msg: Buffer) => {
       messageReceived++;
       const n: number = Date.now();
-      const l: number = n - Number(msg.toString());
+      const l: number = n - Number(msg.toString().substring(0, msg.toString().indexOf('//')));
       arrayPerformance.push(l);
       arrayCSV.push([n, l]);
     });
@@ -92,22 +95,28 @@ class TestI2pSamRawBenchmark {
     console.log(`${this.listenPort} / Starting & running for ${this.minutes}mins / ${Date.now()}`);
     let sentMsgs: number = 0;
     const intervalSender = setInterval(async () => {
-      i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
+      i2pSender.send(
+        destinationRecipient,
+        Buffer.concat([Buffer.from(Date.now().toString() + '//'), crypto.randomFillSync(Buffer.alloc(DATA_BYTES))])
+      );
       sentMsgs++;
     }, this.interval);
 
-    await TestI2pSamRawBenchmark.wait(Math.floor(this.interval / 2.1));
+    await TestRawLargeSizeBenchmark.wait(Math.floor(this.interval / 2.1));
 
     const intervalRecipient = setInterval(async () => {
-      i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));
+      i2pRecipient.send(
+        destinationSender,
+        Buffer.concat([Buffer.from(Date.now().toString() + '//'), crypto.randomFillSync(Buffer.alloc(DATA_BYTES))])
+      );
       sentMsgs++;
     }, this.interval);
 
     let n: number = 0;
     const fCSV = fs.openSync(this.pathCSV, 'a');
-    fs.writeSync(fCSV, `Params: ${this.minutes}/${this.interval}/${this.optionsSession}\r\n`);
+    fs.writeSync(fCSV, `Params: ${this.minutes}/${this.interval}/${DATA_BYTES}/${this.optionsSession}\r\n`);
     while (n++ < this.minutes) {
-      await TestI2pSamRawBenchmark.wait(60000);
+      await TestRawLargeSizeBenchmark.wait(60000);
       // write csv
       arrayCSV.forEach((a) => {
         fs.writeSync(fCSV, a.join(',') + '\r\n');
@@ -142,21 +151,17 @@ class TestI2pSamRawBenchmark {
 const jobsDone: Array<boolean> = [];
 const jobs: Array<Function> = [
   async (): Promise<void> => {
-    await new TestI2pSamRawBenchmark(
-      360,
+    await new TestRawLargeSizeBenchmark(
+      15,
       500,
-      20200,
+      20221,
       'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false'
     ).run();
-    jobsDone.push(true);
-  },
-  async (): Promise<void> => {
-    await new TestI2pSamRawBenchmark(360, 500, 20300).run();
     jobsDone.push(true);
   },
 ];
 jobs.forEach((f) => f());
 
 while (jobsDone.length < jobs.length) {
-  await TestI2pSamRawBenchmark.wait(1000);
+  await TestRawLargeSizeBenchmark.wait(1000);
 }

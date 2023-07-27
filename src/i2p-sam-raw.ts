@@ -19,13 +19,15 @@
 import { I2pSam } from './i2p-sam.js';
 import { Configuration } from './config.js';
 import dgram, { Socket } from 'dgram';
+import zlib from 'zlib';
 
-const MIN_UDP_MESSAGE_LENGTH = 1;
-const MAX_UDP_MESSAGE_LENGTH = 31744;
+const MIN_UDP_MESSAGE_LENGTH: number = 1; // SAM v3 specs
+const MAX_UDP_MESSAGE_LENGTH: number = 32768; // SAM v3 specs
 
 export class I2pSamRaw extends I2pSam {
-  private socketControlUDP: Socket = {} as Socket; // outgoing
-  private socketListen: Socket = {} as Socket; // incoming
+  protected isReplyAble: boolean; // whether the udp message contains the message origin
+  private socketControlUDP: Socket; // outgoing
+  private socketListen: Socket; // incoming
 
   static async createRaw(c: Configuration): Promise<I2pSamRaw> {
     return await I2pSamRaw.make(c);
@@ -38,11 +40,18 @@ export class I2pSamRaw extends I2pSam {
     return r;
   }
 
+  protected constructor(c: Configuration) {
+    super(c);
+    this.isReplyAble = false;
+    this.socketControlUDP = {} as Socket;
+    this.socketListen = {} as Socket;
+  }
+
   protected async open(): Promise<I2pSamRaw> {
     await super.open();
 
     this.socketControlUDP = dgram.createSocket({ type: 'udp4' });
-    this.socketControlUDP.on('error', (error: Error) => {
+    this.socketControlUDP.on('error', (error: Error): void => {
       this.emit('error', error);
     });
 
@@ -51,23 +60,28 @@ export class I2pSamRaw extends I2pSam {
       return Promise.resolve(this);
     }
 
-    this.socketListen = dgram.createSocket('udp4', (msg: Buffer) => {
+    this.socketListen = dgram.createSocket('udp4', (msg: Buffer): void => {
       try {
-        let [fromDestination, message] = msg.toString().split('\n');
-        if (!message) {
-          message = fromDestination;
-          fromDestination = '';
+        let fromDestination: string = '';
+        let message: Buffer;
+        if (this.isReplyAble) {
+          const i: number = msg.indexOf(10); // 10 = ascii value of \n
+          fromDestination = msg.subarray(0, i).toString();
+          message = msg.subarray(i + 1);
+        } else {
+          message = msg;
         }
-        this.emit('data', Buffer.from(message, 'base64'), fromDestination);
+        this.emit('data', zlib.gunzipSync(message), fromDestination);
       } catch (error) {
+        this.emit('error', error);
         return;
       }
     });
-    this.socketListen.on('close', () => {
+    this.socketListen.on('close', (): void => {
       this.emit('close');
     });
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject): void => {
       this.socketListen.once('error', (error: Error) => {
         reject(error);
       });
@@ -81,7 +95,7 @@ export class I2pSamRaw extends I2pSam {
     });
   }
 
-  close() {
+  close(): void {
     this.socketControlUDP.close();
     this.socketListen.close();
     super.close();
@@ -91,30 +105,36 @@ export class I2pSamRaw extends I2pSam {
     return super.initSession(type);
   }
 
-  send(destination: string, msg: Buffer) {
-    (async (destination: string, msg: Buffer) => {
+  send(destination: string, msg: Buffer): void {
+    if (msg.byteLength < MIN_UDP_MESSAGE_LENGTH || msg.byteLength > MAX_UDP_MESSAGE_LENGTH * 2) {
+      this.emit('error', new Error('I2pSamRaw.send(): invalid message length'));
+      return;
+    }
+
+    (async (destination: string, msg: Buffer): Promise<void> => {
       if (/\.i2p$/.test(destination)) {
         destination = await this.resolve(destination);
       }
 
-      const s = msg.toString('base64');
-      if (s.length < MIN_UDP_MESSAGE_LENGTH) {
-        return this.emit('error', new Error('I2pSamRaw.send(): message length < MIN_UDP_MESSAGE_LENGTH'));
-      } else if (s.length > MAX_UDP_MESSAGE_LENGTH) {
-        return this.emit('error', new Error('I2pSamRaw.send(): message length > MAX_UDP_MESSAGE_LENGTH'));
-      }
-
-      try {
-        this.socketControlUDP.send(
-          `3.0 ${this.config.session.id} ${destination}\n` + s,
-          this.config.sam.portUDP,
-          this.config.sam.host,
-          (error) => {
-            error && this.emit('error', error);
-          }
+      const s: Buffer = zlib.gzipSync(msg);
+      if (s.byteLength > MAX_UDP_MESSAGE_LENGTH) {
+        this.emit(
+          'error',
+          new Error(`I2pSamRaw.send(): message length > MAX_UDP_MESSAGE_LENGTH (${MAX_UDP_MESSAGE_LENGTH})`)
         );
-      } catch (error: any) {
-        return this.emit('error', new Error(error.toString()));
+      } else {
+        try {
+          this.socketControlUDP.send(
+            Buffer.concat([Buffer.from(`3.0 ${this.config.session.id} ${destination}\n`), s]),
+            this.config.sam.portUDP,
+            this.config.sam.host,
+            (error: Error | null): void => {
+              error && this.emit('error', error);
+            }
+          );
+        } catch (error: any) {
+          this.emit('error', new Error(error.toString()));
+        }
       }
     })(destination, msg);
   }

@@ -34,11 +34,19 @@ class TestI2pSamRaw {
   @test
   @timeout(180000)
   async send() {
-    let messageCounterA = 0;
-    let messageCounterB = 0;
+    let messageCounterA: number = 0;
+    let messageCounterB: number = 0;
 
-    let destinationSender = '';
-    let destinationRecipient = '';
+    let destinationSender: string = '';
+    let destinationRecipient: string = '';
+
+    // 32K text data
+    const dataToSend: Buffer = Buffer.from(
+      crypto
+        .randomFillSync(Buffer.alloc(33000))
+        .toString('base64')
+        .substring(0, 32 * 1024)
+    );
 
     console.log('Creating Sender...');
     const i2pSender: I2pSamRaw = (
@@ -51,7 +59,8 @@ class TestI2pSamRaw {
           hostForward: SAM_LISTEN_FORWARD,
         },
       })
-    ).on('data', () => {
+    ).on('data', (data: Buffer) => {
+      expect(data.toString()).to.be.equal(dataToSend.toString());
       messageCounterA++;
     });
     destinationSender = i2pSender.getPublicKey();
@@ -67,7 +76,8 @@ class TestI2pSamRaw {
           hostForward: SAM_LISTEN_FORWARD,
         },
       })
-    ).on('data', () => {
+    ).on('data', (data: Buffer): void => {
+      expect(data.toString()).to.be.equal(dataToSend.toString());
       messageCounterB++;
     });
     destinationRecipient = i2pRecipient.getPublicKey();
@@ -75,12 +85,12 @@ class TestI2pSamRaw {
     console.log(Date.now() + ' - start sending data...');
     let sentMsgs = 0;
     const intervalSender = setInterval(async () => {
-      i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
+      i2pSender.send(destinationRecipient, dataToSend);
       sentMsgs++;
     }, 50);
 
     const intervalRecipient = setInterval(async () => {
-      i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));
+      i2pRecipient.send(destinationSender, dataToSend);
       sentMsgs++;
     }, 50);
 
@@ -103,8 +113,8 @@ class TestI2pSamRaw {
   @timeout(90000)
   async fail() {
     const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
-    const dest = await lookup(config, 'diva.i2p');
-    const sam = await createRaw(config);
+    const dest: string = await lookup(config, 'diva.i2p');
+    const sam: I2pSamRaw = await createRaw(config);
 
     let e = '';
     await new Promise((resolve) => {
@@ -113,9 +123,19 @@ class TestI2pSamRaw {
         e = error.toString();
         resolve(true);
       });
-      sam.send('diva.i2p', Buffer.from(''));
+      sam.send(dest, Buffer.from(''));
     });
-    expect(e).contains('MIN_UDP_MESSAGE_LENGTH');
+    expect(e).contains('invalid message length');
+
+    await new Promise((resolve) => {
+      sam.removeAllListeners();
+      sam.once('error', (error: any) => {
+        e = error.toString();
+        resolve(true);
+      });
+      sam.send(dest, Buffer.from(crypto.randomFillSync(Buffer.alloc(65 * 1024))));
+    });
+    expect(e).contains('invalid message length');
 
     e = '';
     await new Promise((resolve) => {
@@ -124,7 +144,7 @@ class TestI2pSamRaw {
         e = error.toString();
         resolve(true);
       });
-      sam.send(dest, crypto.randomFillSync(Buffer.alloc(32 * 1024)));
+      sam.send('diva.i2p', crypto.randomFillSync(Buffer.alloc(1 + 32 * 1024)));
     });
     expect(e).contains('MAX_UDP_MESSAGE_LENGTH');
   }

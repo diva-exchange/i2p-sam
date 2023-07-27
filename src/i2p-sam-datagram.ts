@@ -31,6 +31,11 @@ export class I2pSamDatagram extends I2pSamRaw {
     return r;
   }
 
+  protected constructor(c: Configuration) {
+    super(c);
+    this.isReplyAble = true;
+  }
+
   protected async initSession(): Promise<I2pSamDatagram> {
     await super.initSession('DATAGRAM');
     return this;

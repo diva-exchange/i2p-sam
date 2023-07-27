@@ -11,6 +11,7 @@ services:
     image: divax/i2p:current
     restart: unless-stopped
     environment:
+      ENABLE_HIDDEN: 1
       ENABLE_SAM: 1
       BANDWIDTH: P
     volumes:

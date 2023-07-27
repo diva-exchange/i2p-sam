@@ -16,9 +16,10 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { suite, test, slow, timeout } from '@testdeck/mocha';
+import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import { createDatagram, I2pSamDatagram } from '../../lib/index.js';
+import crypto from 'crypto';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP) || 7656;
@@ -30,14 +31,18 @@ const SAM_LISTEN_FORWARD = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 @suite
 class TestI2pSamDatagram {
   @test
-  @timeout(120000)
-  @slow(120000)
+  @timeout(180000)
   async send() {
-    let messageCounterA = 0;
-    let messageCounterB = 0;
+    let messageCounterA: number = 0;
+    let messageCounterB: number = 0;
 
-    let destinationSender = '';
-    let destinationRecipient = '';
+    let destinationSender: string = '';
+    let destinationRecipient: string = '';
+
+    // 1K text data
+    const dataToSend: Buffer = Buffer.from(
+      '\n' + crypto.randomFillSync(Buffer.alloc(1000)).toString('base64').substring(0, 1023)
+    );
 
     console.log('Creating Sender...');
     const i2pSender: I2pSamDatagram = (
@@ -49,7 +54,8 @@ class TestI2pSamDatagram {
           hostForward: SAM_LISTEN_FORWARD,
         },
       })
-    ).on('data', () => {
+    ).on('data', (data: Buffer) => {
+      expect(data.toString()).to.be.equal(dataToSend.toString());
       messageCounterA++;
     });
     destinationSender = i2pSender.getPublicKey();
@@ -64,7 +70,8 @@ class TestI2pSamDatagram {
           hostForward: SAM_LISTEN_FORWARD,
         },
       })
-    ).on('data', () => {
+    ).on('data', (data: Buffer) => {
+      expect(data.toString()).to.be.equal(dataToSend.toString());
       messageCounterB++;
     });
     destinationRecipient = i2pRecipient.getPublicKey();
@@ -72,12 +79,12 @@ class TestI2pSamDatagram {
     console.log(Date.now() + ' - start sending data...');
     let sentMsgs = 0;
     const intervalSender = setInterval(async () => {
-      i2pSender.send(destinationRecipient, Buffer.from(Date.now().toString()));
+      i2pSender.send(destinationRecipient, dataToSend);
       sentMsgs++;
     }, 50);
 
     const intervalRecipient = setInterval(async () => {
-      i2pRecipient.send(destinationSender, Buffer.from(Date.now().toString()));
+      i2pRecipient.send(destinationSender, dataToSend);
       sentMsgs++;
     }, 50);
 
