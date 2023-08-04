@@ -9,5 +9,5 @@
     "text-summary",
     "html"
   ],
-  "report-dir": "./coverage"
+  "report-dir": "./test/coverage"
 }

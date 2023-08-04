@@ -19,6 +19,7 @@
 import { Socket } from 'net';
 import { I2pSam } from './i2p-sam.js';
 import { Configuration } from './config.js';
+import { clearTimeout } from 'timers';
 
 export class I2pSamStream extends I2pSam {
   private socketStream: Socket = {} as Socket;
@@ -26,6 +27,7 @@ export class I2pSamStream extends I2pSam {
   private hostForward: string = '';
   private portForward: number = 0;
   private hasStream: boolean = false;
+  private timeout: number = 0;
 
   static async createStream(c: Configuration): Promise<I2pSamStream> {
     return await I2pSamStream.make(c);
@@ -38,18 +40,27 @@ export class I2pSamStream extends I2pSam {
   static async make(c: Configuration): Promise<I2pSamStream> {
     const r: I2pSamStream = new I2pSamStream(c);
     await r.open();
-    await r.initSession('STREAM');
-    await r.connect();
-    return r;
+    return await new Promise((resolve, reject): void => {
+      (async (r: I2pSamStream): Promise<void> => {
+        const t: NodeJS.Timer = setTimeout((): void => {
+          reject(new Error('Stream timeout'));
+        }, r.timeout * 1000);
+        await r.initSession('STREAM');
+        await r.connect();
+        clearTimeout(t);
+        resolve(r);
+      })(r);
+    });
   }
 
   protected async open(): Promise<I2pSamStream> {
     await super.open();
 
     this.destination = this.config.stream.destination || '';
+    this.timeout = this.config.stream.timeout || 0;
     this.hostForward = this.config.forward.host || '';
     this.portForward = this.config.forward.port || 0;
-    if (!(this.hostForward && this.portForward > 0) && !this.destination) {
+    if ((!(this.hostForward && this.portForward > 0) && !this.destination) || this.timeout < 1 || this.timeout > 300) {
       throw new Error('Stream configuration invalid');
     }
 
@@ -65,7 +76,7 @@ export class I2pSamStream extends I2pSam {
       this.emit('close');
     });
 
-    this.socketStream.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, () => {
+    this.socketStream.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, (): void => {
       this.socketStream.removeAllListeners('error');
       this.socketStream.on('error', (error: Error) => {
         this.emit('error', error);
@@ -73,19 +84,19 @@ export class I2pSamStream extends I2pSam {
     });
 
     await this.hello(this.socketStream);
-    return Promise.resolve(this);
+    return this;
   }
 
-  close() {
+  close(): void {
     this.socketStream.destroy();
     super.close();
   }
 
   private async connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject): void => {
       this.internalEventEmitter.removeAllListeners();
-      this.internalEventEmitter.once('error', reject);
-      this.internalEventEmitter.once('stream', () => {
+      this.internalEventEmitter.once('error', (error: Error) => reject(error));
+      this.internalEventEmitter.once('stream', (): void => {
         this.hasStream = true;
         resolve();
       });
@@ -99,15 +110,13 @@ export class I2pSamStream extends I2pSam {
           `SILENT=${this.config.forward.silent ? 'true' : 'false'} ` +
           `ID=${this.config.session.id} PORT=${this.portForward} HOST=${this.hostForward}\n`;
       }
-      this.socketStream.write(s, (error) => {
-        error && this.internalEventEmitter.emit('error', error);
-      });
+      this.stream(Buffer.from(s));
     });
   }
 
-  stream(msg: Buffer) {
-    this.socketStream.write(msg, (error) => {
-      error && this.emit('error', error);
+  stream(msg: Buffer): void {
+    this.socketStream.write(msg, (error: Error | undefined): void => {
+      error && this.emit('error', error || new Error('Failed to write to stream'));
     });
   }
 }

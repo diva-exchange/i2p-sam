@@ -1,6 +1,6 @@
 {
   "name": "@diva.exchange/i2p-sam",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "type": "module",
   "exports": {
@@ -29,7 +29,7 @@
     "clean-test": "rm -rf test/compiled-lib/*",
     "clean-benchmark": "rm -rf test/compiled-benchmark/*",
     "lint": "prettier -w \"**/*.ts\" && eslint --fix src/ test/ --ext .ts",
-    "test": "npm run build && npm run clean-test && tsc -p ./test/lib/tsconfig.json && c8 mocha",
+    "test": "npm run build && npm run clean-test && tsc -p ./test/tsconfig.json && c8 mocha",
     "benchmark": "npm run clean-benchmark && tsc -p ./test/benchmark/tsconfig.json",
     "prepublishOnly": "npm run build"
   },
@@ -45,16 +45,16 @@
     "@tsconfig/node16": "^16.1.0",
     "@types/chai": "^4.3.5",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.4.5",
-    "@typescript-eslint/eslint-plugin": "^6.2.0",
-    "@typescript-eslint/parser": "^6.2.0",
+    "@types/node": "^20.4.7",
+    "@typescript-eslint/eslint-plugin": "^6.2.1",
+    "@typescript-eslint/parser": "^6.2.1",
     "c8": "^8.0.1",
     "chai": "^4.3.7",
-    "eslint": "^8.45.0",
-    "eslint-config-prettier": "^8.9.0",
+    "eslint": "^8.46.0",
+    "eslint-config-prettier": "^8.10.0",
     "eslint-plugin-prettier": "^5.0.0",
     "mocha": "^10.2.0",
-    "prettier": "^3.0.0",
+    "prettier": "^3.0.1",
     "typescript": "^5.1.6"
   }
 }

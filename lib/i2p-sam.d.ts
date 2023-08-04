@@ -11,10 +11,10 @@ export declare class I2pSam extends EventEmitter {
   private privateKey;
   protected internalEventEmitter: EventEmitter;
   protected constructor(c: Configuration);
-  protected open(): Promise<any>;
+  protected open(): Promise<I2pSam>;
   protected close(): void;
   protected hello(socket: Socket): Promise<void>;
-  protected initSession(type: string): Promise<any>;
+  protected initSession(type: string): Promise<I2pSam>;
   protected parseReply(data: Buffer): boolean | undefined;
   private static parseReplyKeyValue;
   private generateDestination;

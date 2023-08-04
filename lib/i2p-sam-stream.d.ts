@@ -7,6 +7,7 @@ export declare class I2pSamStream extends I2pSam {
   private hostForward;
   private portForward;
   private hasStream;
+  private timeout;
   static createStream(c: Configuration): Promise<I2pSamStream>;
   static createForward(c: Configuration): Promise<I2pSamStream>;
   static make(c: Configuration): Promise<I2pSamStream>;

@@ -18,7 +18,10 @@
 
 import { nanoid } from 'nanoid';
 
-const DEFAULT_LENGTH_SESSION = 16;
+export const MIN_UDP_MESSAGE_LENGTH: number = 1; // SAM v3 specs
+export const MAX_UDP_MESSAGE_LENGTH: number = 16384; // SAM v3 specs says 32768, but that's too high, setting to 16K
+
+const DEFAULT_LENGTH_SESSION: number = 16;
 
 type tSession = {
   id?: string;
@@ -27,6 +30,7 @@ type tSession = {
 
 type tStream = {
   destination: string;
+  timeout?: number;
 };
 
 type tForward = {
@@ -75,6 +79,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
+    timeout: 60,
   },
   forward: {
     host: '',

@@ -339,6 +339,7 @@ type tSession = {
 
 type tStream = {
   destination: string;
+  timeout: number;
 };
 
 type tForward = {
@@ -387,6 +388,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
+    timeout: 60,
   },
   forward: {
     host: '',

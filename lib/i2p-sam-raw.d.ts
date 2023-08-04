@@ -12,4 +12,5 @@ export declare class I2pSamRaw extends I2pSam {
   close(): void;
   protected initSession(type?: string): Promise<I2pSamRaw>;
   send(destination: string, msg: Buffer): void;
+  private s;
 }

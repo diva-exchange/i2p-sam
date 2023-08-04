@@ -22,31 +22,26 @@ import crypto from 'crypto';
 import { Configuration } from '../../lib/index.js';
 import { createRaw, I2pSamRaw, lookup } from '../../lib/index.js';
 
-const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
-const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP) || 7656;
-const SAM_PORT_UDP = Number(process.env.SAM_PORT_UDP) || 7655;
-const SAM_LISTEN_ADDRESS = process.env.SAM_LISTEN_ADDRESS || '0.0.0.0';
-const SAM_LISTEN_PORT = Number(process.env.SAM_LISTEN_PORT) || 20222;
-const SAM_LISTEN_FORWARD = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
+const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
+const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP) || 7656;
+const SAM_PORT_UDP: number = Number(process.env.SAM_PORT_UDP) || 7655;
+const SAM_LISTEN_ADDRESS: string = process.env.SAM_LISTEN_ADDRESS || '0.0.0.0';
+const SAM_LISTEN_PORT: number = Number(process.env.SAM_LISTEN_PORT) || 20222;
+const SAM_LISTEN_FORWARD: string = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 
 @suite
 class TestI2pSamRaw {
   @test
   @timeout(180000)
-  async send() {
+  async send(): Promise<void> {
     let messageCounterA: number = 0;
     let messageCounterB: number = 0;
 
     let destinationSender: string = '';
     let destinationRecipient: string = '';
 
-    // 32K text data
-    const dataToSend: Buffer = Buffer.from(
-      crypto
-        .randomFillSync(Buffer.alloc(33000))
-        .toString('base64')
-        .substring(0, 32 * 1024)
-    );
+    // 16K data
+    const dataToSend: Buffer = crypto.randomFillSync(Buffer.alloc(16 * 1024));
 
     console.log('Creating Sender...');
     const i2pSender: I2pSamRaw = (
@@ -60,7 +55,7 @@ class TestI2pSamRaw {
         },
       })
     ).on('data', (data: Buffer) => {
-      expect(data.toString()).to.be.equal(dataToSend.toString());
+      expect(data.toString('base64')).to.be.equal(dataToSend.toString('base64'));
       messageCounterA++;
     });
     destinationSender = i2pSender.getPublicKey();
@@ -77,19 +72,19 @@ class TestI2pSamRaw {
         },
       })
     ).on('data', (data: Buffer): void => {
-      expect(data.toString()).to.be.equal(dataToSend.toString());
+      expect(data.toString('base64')).to.be.equal(dataToSend.toString('base64'));
       messageCounterB++;
     });
     destinationRecipient = i2pRecipient.getPublicKey();
 
     console.log(Date.now() + ' - start sending data...');
-    let sentMsgs = 0;
-    const intervalSender = setInterval(async () => {
+    let sentMsgs: number = 0;
+    const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
       i2pSender.send(destinationRecipient, dataToSend);
       sentMsgs++;
     }, 50);
 
-    const intervalRecipient = setInterval(async () => {
+    const intervalRecipient: NodeJS.Timer = setInterval(async (): Promise<void> => {
       i2pRecipient.send(destinationSender, dataToSend);
       sentMsgs++;
     }, 50);
@@ -111,12 +106,12 @@ class TestI2pSamRaw {
 
   @test
   @timeout(90000)
-  async fail() {
+  async fail(): Promise<void> {
     const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
     const dest: string = await lookup(config, 'diva.i2p');
     const sam: I2pSamRaw = await createRaw(config);
 
-    let e = '';
+    let e: string = '';
     await new Promise((resolve) => {
       sam.removeAllListeners();
       sam.once('error', (error: any) => {
@@ -136,21 +131,10 @@ class TestI2pSamRaw {
       sam.send(dest, Buffer.from(crypto.randomFillSync(Buffer.alloc(65 * 1024))));
     });
     expect(e).contains('invalid message length');
-
-    e = '';
-    await new Promise((resolve) => {
-      sam.removeAllListeners();
-      sam.on('error', (error: any) => {
-        e = error.toString();
-        resolve(true);
-      });
-      sam.send('diva.i2p', crypto.randomFillSync(Buffer.alloc(1 + 32 * 1024)));
-    });
-    expect(e).contains('MAX_UDP_MESSAGE_LENGTH');
   }
 
   @test
-  async failListen() {
+  async failListen(): Promise<void> {
     try {
       await createRaw({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
@@ -165,7 +149,7 @@ class TestI2pSamRaw {
     }
   }
 
-  static async wait(ms: number) {
+  static async wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

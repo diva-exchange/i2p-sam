@@ -2,6 +2,5 @@
   "reporter": "list",
   "extensions": ["js"],
   "spec": ["test/compiled-lib/**/*.spec.js"],
-  "exit": true,
-  "bail": false
+  "exit": true
 }

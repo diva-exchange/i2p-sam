@@ -51,7 +51,7 @@ class TestI2pSamBaseClass {
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
     });
 
-    const pair = sam.getKeyPair();
+    const pair: { public: string; private: string } = sam.getKeyPair();
     expect(pair.public).to.be.eq(sam.getPublicKey());
     expect(pair.private).to.be.eq(sam.getPrivateKey());
     expect(sam.getB32Address()).not.to.be.empty;

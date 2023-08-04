@@ -16,35 +16,39 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { slow, suite, test, timeout } from '@testdeck/mocha';
+import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import net from 'net';
 import { createForward, createStream, toB32, I2pSamStream } from '../../lib/index.js';
 
-const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
-const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP || 7656);
+const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
+const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP || 7656);
 
-const SAM_FORWARD_HOST = process.env.SAM_FORWARD_HOST || '172.19.74.1';
-const SAM_FORWARD_PORT = Number(process.env.SAM_PORT_TCP || 20222);
+const SAM_FORWARD_HOST: string = process.env.SAM_FORWARD_HOST || '172.19.74.1';
+const SAM_FORWARD_PORT: number = Number(process.env.SAM_PORT_TCP || 20222);
 
 @suite
 class TestI2pSamStream {
   @test
-  @slow(60000)
-  @timeout(90000)
-  async stream() {
-    let messageCounter = 0;
+  @timeout(120000)
+  async stream(): Promise<void> {
+    let messageCounter: number = 0;
 
     console.log('Creating Stream...');
-    const i2pSender: I2pSamStream = await createStream({
-      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
-      stream: {
-        destination: 'diva.i2p',
-      },
-    });
-    i2pSender.on('data', () => {
-      messageCounter++;
-    });
+    const i2pSender: I2pSamStream = (
+      await createStream({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+        stream: {
+          destination: 'diva.i2p',
+        },
+      })
+    )
+      .on('data', (): void => {
+        messageCounter++;
+      })
+      .on('error', (): void => {
+        expect(false).to.be.true;
+      });
 
     console.log('Start streaming data...');
     console.log(Date.now());
@@ -62,18 +66,17 @@ class TestI2pSamStream {
   }
 
   @test
-  @slow(120000)
-  @timeout(180000)
-  async forward() {
-    let messageCounter = 0;
+  @timeout(120000)
+  async forward(): Promise<void> {
+    let messageCounter: number = 0;
 
     console.log('Creating listener');
     const serverForward = net.createServer((c) => {
       console.debug('client connected');
-      c.on('end', () => {
+      c.on('end', (): void => {
         console.debug('client disconnected');
       });
-      c.on('data', () => {
+      c.on('data', (): void => {
         c.write(`hello ${messageCounter}\n`);
       });
     });
@@ -102,7 +105,7 @@ class TestI2pSamStream {
             destination: destination,
           },
         });
-        i2pSender.on('data', () => {
+        i2pSender.on('data', (): void => {
           messageCounter++;
         });
       } catch (error: any) {
@@ -128,7 +131,26 @@ class TestI2pSamStream {
   }
 
   @test
-  async fail() {
+  @timeout(5000)
+  async failTimeout(): Promise<void> {
+    // timeout error
+    try {
+      await createStream({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+        stream: {
+          destination: 'diva.i2p',
+          timeout: 2,
+        },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('timeout');
+    }
+  }
+
+  @test
+  @timeout(5000)
+  async failNotFound(): Promise<void> {
     // connection error
     try {
       await createStream({
@@ -142,7 +164,11 @@ class TestI2pSamStream {
     } catch (error: any) {
       expect(error.toString()).contains('ENOTFOUND');
     }
+  }
 
+  @test
+  @timeout(5000)
+  async failEmptyDestination(): Promise<void> {
     // empty destination
     try {
       await createStream({
@@ -158,7 +184,7 @@ class TestI2pSamStream {
     }
   }
 
-  static async wait(ms: number) {
+  static async wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
