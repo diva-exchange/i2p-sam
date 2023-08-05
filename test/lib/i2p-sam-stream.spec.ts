@@ -19,13 +19,13 @@
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import net from 'net';
-import { createForward, createStream, toB32, I2pSamStream } from '../../lib/index.js';
+import { createForward, createStream, toB32, I2pSamStream, createRaw } from '../../lib/index.js';
 
 const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP || 7656);
 
 const SAM_FORWARD_HOST: string = process.env.SAM_FORWARD_HOST || '172.19.74.1';
-const SAM_FORWARD_PORT: number = Number(process.env.SAM_PORT_TCP || 20222);
+const SAM_FORWARD_PORT: number = Number(process.env.SAM_PORT_TCP || 20226);
 
 @suite
 class TestI2pSamStream {
@@ -136,10 +136,9 @@ class TestI2pSamStream {
     // timeout error
     try {
       await createStream({
-        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 2 },
         stream: {
           destination: 'diva.i2p',
-          timeout: 2,
         },
       });
       expect(false).to.be.true;
@@ -181,6 +180,25 @@ class TestI2pSamStream {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('Stream configuration invalid');
+    }
+  }
+
+  @test
+  async failKeys(): Promise<void> {
+    // public key / private key issues
+    try {
+      await createStream({
+        sam: {
+          host: SAM_HOST,
+          portTCP: SAM_PORT_TCP,
+          publicKey: '-',
+          privateKey: '--',
+        },
+        stream: { destination: 'diva.i2p' },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('SESSION failed').contains('RESULT=INVALID_KEY');
     }
   }
 

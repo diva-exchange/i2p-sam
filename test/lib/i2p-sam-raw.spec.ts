@@ -19,14 +19,14 @@
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import crypto from 'crypto';
-import { Configuration } from '../../lib/index.js';
+import { Configuration, createStream } from '../../lib/index.js';
 import { createRaw, I2pSamRaw, lookup } from '../../lib/index.js';
 
 const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP) || 7656;
 const SAM_PORT_UDP: number = Number(process.env.SAM_PORT_UDP) || 7655;
 const SAM_LISTEN_ADDRESS: string = process.env.SAM_LISTEN_ADDRESS || '0.0.0.0';
-const SAM_LISTEN_PORT: number = Number(process.env.SAM_LISTEN_PORT) || 20222;
+const SAM_LISTEN_PORT: number = Number(process.env.SAM_LISTEN_PORT) || 20224;
 const SAM_LISTEN_FORWARD: string = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 
 @suite
@@ -131,6 +131,19 @@ class TestI2pSamRaw {
       sam.send(dest, Buffer.from(crypto.randomFillSync(Buffer.alloc(65 * 1024))));
     });
     expect(e).contains('invalid message length');
+  }
+
+  @test
+  async failTimeout(): Promise<void> {
+    // timeout error
+    try {
+      await createRaw({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 1 },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('timeout');
+    }
   }
 
   @test

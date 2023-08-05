@@ -18,7 +18,7 @@
 
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { createDatagram, I2pSamDatagram } from '../../lib/index.js';
+import { createDatagram, createRaw, I2pSamDatagram } from '../../lib/index.js';
 import crypto from 'crypto';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
@@ -32,7 +32,7 @@ const SAM_LISTEN_FORWARD = process.env.SAM_LISTEN_FORWARD || '172.19.74.1';
 class TestI2pSamDatagram {
   @test
   @timeout(180000)
-  async send() {
+  async send(): Promise<void> {
     let messageCounterA: number = 0;
     let messageCounterB: number = 0;
 
@@ -101,6 +101,37 @@ class TestI2pSamDatagram {
 
     expect(messageCounterA).not.to.be.equal(0);
     expect(messageCounterB).not.to.be.equal(0);
+  }
+
+  @test
+  async failTimeout(): Promise<void> {
+    // timeout error
+    try {
+      await createDatagram({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP, timeout: 1 },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('timeout');
+    }
+  }
+
+  @test
+  async failKeys(): Promise<void> {
+    // public key / private key issues
+    try {
+      await createDatagram({
+        sam: {
+          host: SAM_HOST,
+          portTCP: SAM_PORT_TCP,
+          publicKey: '-',
+          privateKey: '--',
+        },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('SESSION failed').contains('RESULT=INVALID_KEY');
+    }
   }
 
   static async wait(ms: number) {

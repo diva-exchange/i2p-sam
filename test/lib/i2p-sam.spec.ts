@@ -18,11 +18,11 @@
 
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { toB32, createLocalDestination, lookup, createRaw, I2pSamRaw } from '../../lib/index.js';
+import { toB32, createLocalDestination, lookup, createRaw, I2pSamRaw, createStream } from '../../lib/index.js';
 
-const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
-const SAM_PORT_TCP = Number(process.env.SAM_PORT_TCP || 7656);
-const SAM_PORT_UDP = Number(process.env.SAM_PORT_UDP || 7655);
+const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
+const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP || 7656);
+const SAM_PORT_UDP: number = Number(process.env.SAM_PORT_UDP || 7655);
 
 @suite
 class TestI2pSamBaseClass {
@@ -36,7 +36,7 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  async createLocalDestination() {
+  async createLocalDestination(): Promise<void> {
     const obj = await createLocalDestination({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } });
 
     expect(obj.address).not.to.be.empty;
@@ -46,7 +46,7 @@ class TestI2pSamBaseClass {
 
   @test
   @timeout(120000)
-  async keys() {
+  async keys(): Promise<void> {
     const sam: I2pSamRaw = await createRaw({
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
     });
@@ -59,7 +59,7 @@ class TestI2pSamBaseClass {
 
   @test
   @timeout(10000)
-  async lookup() {
+  async lookup(): Promise<void> {
     const s: string = await lookup({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } }, 'diva.i2p');
     expect(s).not.to.be.empty;
 
@@ -72,7 +72,7 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  async fail() {
+  async failVersion(): Promise<void> {
     // version error
     try {
       await createRaw({
@@ -88,7 +88,10 @@ class TestI2pSamBaseClass {
     } catch (error: any) {
       expect(error.toString()).contains('HELLO failed').contains('RESULT=NOVERSION');
     }
+  }
 
+  @test
+  async failKeys(): Promise<void> {
     // public key / private key issues
     try {
       await createRaw({
@@ -106,7 +109,7 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  async failConnect() {
+  async failConnect(): Promise<void> {
     // connection error
     try {
       await createRaw({
@@ -118,6 +121,22 @@ class TestI2pSamBaseClass {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('ENOTFOUND');
+    }
+  }
+
+  @test
+  async failInvalidTimeout(): Promise<void> {
+    try {
+      await createRaw({
+        sam: {
+          host: SAM_HOST,
+          portTCP: SAM_PORT_TCP,
+          timeout: 0,
+        },
+      });
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('invalid timeout configuration');
     }
   }
 }
