@@ -27,7 +27,6 @@ export class I2pSamStream extends I2pSam {
   private hostForward: string = '';
   private portForward: number = 0;
   private hasStream: boolean = false;
-  private timeout: number = 0;
 
   static async createStream(c: Configuration): Promise<I2pSamStream> {
     return await I2pSamStream.make(c);
@@ -45,10 +44,14 @@ export class I2pSamStream extends I2pSam {
         const t: NodeJS.Timer = setTimeout((): void => {
           reject(new Error('Stream timeout'));
         }, r.timeout * 1000);
-        await r.initSession('STREAM');
-        await r.connect();
-        clearTimeout(t);
-        resolve(r);
+        try {
+          await r.initSession('STREAM');
+          await r.connect();
+          clearTimeout(t);
+          resolve(r);
+        } catch (error) {
+          reject(error);
+        }
       })(r);
     });
   }
@@ -57,10 +60,9 @@ export class I2pSamStream extends I2pSam {
     await super.open();
 
     this.destination = this.config.stream.destination || '';
-    this.timeout = this.config.stream.timeout || 0;
     this.hostForward = this.config.forward.host || '';
     this.portForward = this.config.forward.port || 0;
-    if ((!(this.hostForward && this.portForward > 0) && !this.destination) || this.timeout < 1 || this.timeout > 300) {
+    if (!(this.hostForward && this.portForward > 0) && !this.destination) {
       throw new Error('Stream configuration invalid');
     }
 
