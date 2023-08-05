@@ -408,7 +408,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
     versionMax: '',
     publicKey: '',
     privateKey: '',
-    timeout: 30,
+    timeout: 60,
   },
 };
 ```
