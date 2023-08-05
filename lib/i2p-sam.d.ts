@@ -7,6 +7,7 @@ import { Socket } from 'net';
 export declare class I2pSam extends EventEmitter {
   protected config: Config;
   protected socketControl: Socket;
+  protected timeout: number;
   private publicKey;
   private privateKey;
   protected internalEventEmitter: EventEmitter;

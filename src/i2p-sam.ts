@@ -39,6 +39,7 @@ const VALUE_OK: string = 'OK';
 export class I2pSam extends EventEmitter {
   protected config: Config;
   protected socketControl: Socket = {} as Socket;
+  protected timeout: number = 0;
 
   // identity
   private publicKey: string;
@@ -55,6 +56,11 @@ export class I2pSam extends EventEmitter {
   }
 
   protected async open(): Promise<I2pSam> {
+    this.timeout = this.config.sam.timeout || 0;
+    if (this.timeout < 1 || this.timeout > 300) {
+      throw new Error('I2pSam invalid timeout configuration');
+    }
+
     this.socketControl = new Socket();
     this.socketControl.on('data', (data: Buffer): void => {
       this.parseReply(data);
@@ -90,7 +96,7 @@ export class I2pSam extends EventEmitter {
   }
 
   protected async hello(socket: Socket): Promise<void> {
-    return new Promise((resolve, reject): void => {
+    return await new Promise((resolve, reject): void => {
       const min: string | false = this.config.sam.versionMin || false;
       const max: string | false = this.config.sam.versionMax || false;
 
@@ -108,7 +114,7 @@ export class I2pSam extends EventEmitter {
   }
 
   protected async initSession(type: string): Promise<I2pSam> {
-    return new Promise((resolve, reject): void => {
+    return await new Promise((resolve, reject): void => {
       let s: string = `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
       switch (type) {
         case 'STREAM':
