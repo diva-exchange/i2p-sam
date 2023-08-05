@@ -6,7 +6,6 @@ type tSession = {
 };
 type tStream = {
   destination: string;
-  timeout?: number;
 };
 type tForward = {
   host: string;
@@ -27,6 +26,7 @@ type tSam = {
   versionMax?: string;
   publicKey?: string;
   privateKey?: string;
+  timeout?: number;
 };
 export type Configuration = {
   session?: tSession;

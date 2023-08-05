@@ -30,7 +30,6 @@ type tSession = {
 
 type tStream = {
   destination: string;
-  timeout?: number;
 };
 
 type tForward = {
@@ -54,6 +53,7 @@ type tSam = {
   versionMax?: string;
   publicKey?: string;
   privateKey?: string;
+  timeout?: number;
 };
 
 export type Configuration = {
@@ -79,7 +79,6 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
   },
   stream: {
     destination: '',
-    timeout: 60,
   },
   forward: {
     host: '',
@@ -100,6 +99,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
     versionMax: '',
     publicKey: '',
     privateKey: '',
+    timeout: 30,
   },
 };
 
