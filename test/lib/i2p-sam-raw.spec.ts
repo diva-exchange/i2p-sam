@@ -19,7 +19,7 @@
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import crypto from 'crypto';
-import { Configuration, createStream } from '../../lib/index.js';
+import { Configuration } from '../../lib/index.js';
 import { createRaw, I2pSamRaw, lookup } from '../../lib/index.js';
 
 const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';

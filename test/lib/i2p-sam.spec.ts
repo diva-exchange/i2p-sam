@@ -18,7 +18,7 @@
 
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { toB32, createLocalDestination, lookup, createRaw, I2pSamRaw, createStream } from '../../lib/index.js';
+import { toB32, createLocalDestination, lookup, createRaw, I2pSamRaw, Configuration } from '../../lib/index.js';
 
 const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP || 7656);
@@ -45,7 +45,7 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  @timeout(120000)
+  @timeout(60000)
   async keys(): Promise<void> {
     const sam: I2pSamRaw = await createRaw({
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
@@ -68,6 +68,20 @@ class TestI2pSamBaseClass {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('Invalid I2P address');
+    }
+  }
+
+  @test
+  async invalidConfig(): Promise<void> {
+    try {
+      await createRaw({
+        sam: {
+          timeout: 0,
+        },
+      } as Configuration);
+      expect(false).to.be.true;
+    } catch (error: any) {
+      expect(error.toString()).contains('ECONNREFUSED');
     }
   }
 
@@ -121,22 +135,6 @@ class TestI2pSamBaseClass {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('ENOTFOUND');
-    }
-  }
-
-  @test
-  async failInvalidTimeout(): Promise<void> {
-    try {
-      await createRaw({
-        sam: {
-          host: SAM_HOST,
-          portTCP: SAM_PORT_TCP,
-          timeout: 0,
-        },
-      });
-      expect(false).to.be.true;
-    } catch (error: any) {
-      expect(error.toString()).contains('invalid timeout configuration');
     }
   }
 }
