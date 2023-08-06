@@ -25,15 +25,15 @@ export class I2pSamDatagram extends I2pSamRaw {
     return await I2pSamDatagram.make(c);
   }
 
-  static async make(c: Configuration): Promise<I2pSamDatagram> {
+  static make(c: Configuration): Promise<I2pSamDatagram> {
     const r: I2pSamDatagram = new I2pSamDatagram(c);
-    await r.open();
-    return await new Promise((resolve, reject): void => {
+    return new Promise((resolve, reject): void => {
       (async (r: I2pSamDatagram): Promise<void> => {
         const t: NodeJS.Timer = setTimeout((): void => {
           reject(new Error('I2pSamDatagram timeout'));
         }, r.timeout * 1000);
         try {
+          await r.open();
           await r.initSession();
           clearTimeout(t);
           resolve(r);
