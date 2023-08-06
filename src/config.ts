@@ -99,7 +99,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
     versionMax: '',
     publicKey: '',
     privateKey: '',
-    timeout: 60,
+    timeout: 90,
   },
 };
 
