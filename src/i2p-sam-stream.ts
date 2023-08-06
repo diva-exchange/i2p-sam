@@ -90,7 +90,7 @@ export class I2pSamStream extends I2pSam {
   }
 
   close(): void {
-    this.socketStream.destroy();
+    Object.keys(this.socketStream).length && this.socketStream.destroy();
     super.close();
   }
 

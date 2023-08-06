@@ -104,8 +104,8 @@ export class I2pSamRaw extends I2pSam {
   }
 
   close(): void {
-    this.socketControlUDP.close();
-    this.socketListen.close();
+    Object.keys(this.socketControlUDP).length && this.socketControlUDP.close();
+    Object.keys(this.socketListen).length && this.socketListen.close();
     super.close();
   }
 

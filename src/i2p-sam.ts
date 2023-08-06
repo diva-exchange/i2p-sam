@@ -92,7 +92,7 @@ export class I2pSam extends EventEmitter {
 
   protected close(): void {
     this.internalEventEmitter.removeAllListeners();
-    this.socketControl.destroy();
+    Object.keys(this.socketControl).length && this.socketControl.destroy();
   }
 
   protected hello(socket: Socket): Promise<void> {
