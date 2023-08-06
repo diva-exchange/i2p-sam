@@ -1,7 +1,7 @@
 export declare const MIN_UDP_MESSAGE_LENGTH: number;
 export declare const MAX_UDP_MESSAGE_LENGTH: number;
 type tSession = {
-  id: string;
+  id?: string;
   options?: string;
 };
 type tStream = {

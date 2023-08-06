@@ -24,7 +24,7 @@ export const MAX_UDP_MESSAGE_LENGTH: number = 16384; // SAM v3 specs says 32768,
 const DEFAULT_LENGTH_SESSION: number = 16;
 
 type tSession = {
-  id: string;
+  id?: string;
   options?: string;
 };
 

@@ -333,7 +333,7 @@ Example: see _Get Started: How to Use Datagrams_ above.
 ### Configuration and its Defaults
 ```
 type tSession = {
-  id: string;
+  id?: string;
   options?: string;
 };
 
