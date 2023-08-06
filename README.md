@@ -32,24 +32,28 @@ Send an HTTP GET request to diva.i2p and output the response:
 ```
 import { createStream } from '@diva.exchange/i2p-sam';
 
-createStream({
-  stream: {
-    destination: 'diva.i2p'
-  },
-  sam: {
-    // your local I2P SAM host,
-    // like 172.19.74.11 if you use the given test
-    // docker container (see "Unit Tests" below)
-    host: '127.0.0.1',
-    // your local I2P SAM port, this is the default
-    portTCP: 7656
-  },
-}).then((sam) => {
-  sam.on('data', (data: Buffer) => {
+(async () => {
+
+  const s = await createStream({
+    stream: {
+      destination: 'diva.i2p'
+    },
+    sam: {
+      // your local I2P SAM host,
+      // like 172.19.74.11 if you use the given test
+      // docker container (see "Unit Tests" below)
+      host: '127.0.0.1',
+      // your local I2P SAM port, this is the default
+      portTCP: 7656
+    },
+  });
+  s.on('data', (data: Buffer) => {
     console.log('Incoming Data: ' + data.toString());
   });
-  sam.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
-});
+  
+  s.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+
+})();
 ```
 
 Forward incoming streaming data to a local socket server:
