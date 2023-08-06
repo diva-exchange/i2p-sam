@@ -37,7 +37,6 @@ export class I2pSamStream extends I2pSam {
   }
 
   static make(c: Configuration): Promise<I2pSamStream> {
-    const r: I2pSamStream = new I2pSamStream(c);
     return new Promise((resolve, reject): void => {
       (async (r: I2pSamStream): Promise<void> => {
         const t: NodeJS.Timer = setTimeout((): void => {
@@ -47,12 +46,13 @@ export class I2pSamStream extends I2pSam {
           await r.open();
           await r.initSession('STREAM');
           await r.connect();
-          clearTimeout(t);
           resolve(r);
         } catch (error) {
           reject(error);
+        } finally {
+          clearTimeout(t);
         }
-      })(r);
+      })(new I2pSamStream(c));
     });
   }
 
@@ -67,14 +67,14 @@ export class I2pSamStream extends I2pSam {
     }
 
     this.socketStream = new Socket();
-    this.socketStream.on('data', (data: Buffer) => {
+    this.socketStream.on('data', (data: Buffer): void => {
       if (this.hasStream) {
         this.emit('data', data);
       } else {
         this.parseReply(data);
       }
     });
-    this.socketStream.on('close', () => {
+    this.socketStream.on('close', (): void => {
       this.emit('close');
     });
 
