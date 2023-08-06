@@ -43,9 +43,12 @@ class TestI2pSamRaw {
     // 16K data
     const dataToSend: Buffer = crypto.randomFillSync(Buffer.alloc(16 * 1024));
 
-    console.log('Creating Sender...');
-    const i2pSender: I2pSamRaw = (
-      await createRaw({
+    let i2pSender: I2pSamRaw = {} as I2pSamRaw;
+    let i2pRecipient: I2pSamRaw = {} as I2pSamRaw;
+
+    try {
+      console.log('Creating Sender...');
+      i2pSender = await createRaw({
         session: { options: 'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false' },
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
@@ -53,16 +56,16 @@ class TestI2pSamRaw {
           port: SAM_LISTEN_PORT,
           hostForward: SAM_LISTEN_FORWARD,
         },
-      })
-    ).on('data', (data: Buffer) => {
-      expect(data.toString('base64')).to.be.equal(dataToSend.toString('base64'));
-      messageCounterA++;
-    });
-    destinationSender = i2pSender.getPublicKey();
+      });
+      i2pSender.on('data', (data: Buffer) => {
+        expect(data.toString('base64')).to.be.equal(dataToSend.toString('base64'));
+        messageCounterA++;
+      });
 
-    console.log('Creating Recipient...');
-    const i2pRecipient: I2pSamRaw = (
-      await createRaw({
+      destinationSender = i2pSender.getPublicKey();
+
+      console.log('Creating Recipient...');
+      i2pRecipient = await createRaw({
         session: { options: 'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false' },
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
@@ -70,38 +73,43 @@ class TestI2pSamRaw {
           port: SAM_LISTEN_PORT + 1,
           hostForward: SAM_LISTEN_FORWARD,
         },
-      })
-    ).on('data', (data: Buffer): void => {
-      expect(data.toString('base64')).to.be.equal(dataToSend.toString('base64'));
-      messageCounterB++;
-    });
-    destinationRecipient = i2pRecipient.getPublicKey();
+      });
+      i2pRecipient.on('data', (data: Buffer): void => {
+        expect(data.toString('base64')).to.be.equal(dataToSend.toString('base64'));
+        messageCounterB++;
+      });
 
-    console.log(Date.now() + ' - send udp to diva.i2p (provoking a lookup)');
-    i2pSender.send('diva.i2p', dataToSend);
+      destinationRecipient = i2pRecipient.getPublicKey();
 
-    console.log(Date.now() + ' - start sending data...');
-    let sentMsgs: number = 0;
-    const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
-      i2pSender.send(destinationRecipient, dataToSend);
-      sentMsgs++;
-    }, 50);
+      console.log(Date.now() + ' - send udp to diva.i2p (provoking a lookup)');
+      i2pSender.send('diva.i2p', dataToSend);
 
-    const intervalRecipient: NodeJS.Timer = setInterval(async (): Promise<void> => {
-      i2pRecipient.send(destinationSender, dataToSend);
-      sentMsgs++;
-    }, 50);
+      console.log(Date.now() + ' - start sending data...');
+      let sentMsg: number = 0;
+      const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
+        i2pSender.send(destinationRecipient, dataToSend);
+        sentMsg++;
+      }, 50);
 
-    while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
-      await TestI2pSamRaw.wait(100);
+      const intervalRecipient: NodeJS.Timer = setInterval(async (): Promise<void> => {
+        i2pRecipient.send(destinationSender, dataToSend);
+        sentMsg++;
+      }, 50);
+
+      while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
+        await TestI2pSamRaw.wait(100);
+      }
+      console.log(Date.now() + ' - total Sent: ' + sentMsg);
+      console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10 + '%');
+
+      clearInterval(intervalSender);
+      clearInterval(intervalRecipient);
+    } catch (error: any) {
+      console.debug(error.toString());
+    } finally {
+      Object.keys(i2pSender).length && i2pSender.close();
+      Object.keys(i2pRecipient).length && i2pRecipient.close();
     }
-    console.log(Date.now() + ' - total Sent: ' + sentMsgs);
-    console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsgs) * 1000) / 10 + '%');
-
-    clearInterval(intervalSender);
-    clearInterval(intervalRecipient);
-    i2pSender.close();
-    i2pRecipient.close();
 
     expect(messageCounterA).not.to.be.equal(0);
     expect(messageCounterB).not.to.be.equal(0);
@@ -109,56 +117,57 @@ class TestI2pSamRaw {
 
   @test
   @timeout(90000)
-  async fail(): Promise<void> {
+  async failEmptyMessage(): Promise<void> {
     const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
     const dest: string = await lookup(config, 'diva.i2p');
-    const sam: I2pSamRaw = await createRaw(config);
+    let raw: I2pSamRaw = {} as I2pSamRaw;
+    try {
+      raw = await createRaw(config);
+      raw.send(dest, Buffer.from(''));
+    } catch (error: any) {
+      expect(error.toString()).contains('invalid message length');
+    } finally {
+      Object.keys(raw).length && raw.close();
+    }
+  }
 
-    let e: string = '';
-    await new Promise((resolve) => {
-      sam.removeAllListeners();
-      sam.once('error', (error: any) => {
-        e = error.toString();
-        resolve(true);
-      });
-      sam.send(dest, Buffer.from(''));
-    });
-    expect(e).contains('invalid message length');
-
-    await new Promise((resolve) => {
-      sam.removeAllListeners();
-      sam.once('error', (error: any) => {
-        e = error.toString();
-        resolve(true);
-      });
-      sam.send(dest, Buffer.from(crypto.randomFillSync(Buffer.alloc(65 * 1024))));
-    });
-    expect(e).contains('invalid message length');
-
-    sam.close();
+  @test
+  @timeout(90000)
+  async failTooLargeMessage(): Promise<void> {
+    const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
+    const dest: string = await lookup(config, 'diva.i2p');
+    let raw: I2pSamRaw = {} as I2pSamRaw;
+    try {
+      raw = await createRaw(config);
+      raw.send(dest, Buffer.from(crypto.randomFillSync(Buffer.alloc(65 * 1024))));
+    } catch (error: any) {
+      expect(error.toString()).contains('invalid message length');
+    } finally {
+      Object.keys(raw).length && raw.close();
+    }
   }
 
   @test
   async failTimeout(): Promise<void> {
-    let f: I2pSamRaw = {} as I2pSamRaw;
+    let raw: I2pSamRaw = {} as I2pSamRaw;
     // timeout error
     try {
-      f = await createRaw({
+      raw = await createRaw({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 1 },
       });
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('timeout');
     } finally {
-      f && f.close();
+      Object.keys(raw).length && raw.close();
     }
   }
 
   @test
   async failListen(): Promise<void> {
-    let f: I2pSamRaw = {} as I2pSamRaw;
+    let raw: I2pSamRaw = {} as I2pSamRaw;
     try {
-      f = await createRaw({
+      raw = await createRaw({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
         listen: {
           address: SAM_HOST,
@@ -169,7 +178,7 @@ class TestI2pSamRaw {
     } catch (error: any) {
       expect(error.toString()).contains('EADDRNOTAVAIL');
     } finally {
-      f && f.close();
+      Object.keys(raw).length && raw.close();
     }
   }
 

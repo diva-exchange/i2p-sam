@@ -18,7 +18,7 @@
 
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
-import { createDatagram, createRaw, I2pSamDatagram } from '../../lib/index.js';
+import { createDatagram, I2pSamDatagram } from '../../lib/index.js';
 import crypto from 'crypto';
 
 const SAM_HOST = process.env.SAM_HOST || '172.19.74.11';
@@ -44,60 +44,66 @@ class TestI2pSamDatagram {
       '\n' + crypto.randomFillSync(Buffer.alloc(1000)).toString('base64').substring(0, 1023)
     );
 
-    console.log('Creating Sender...');
-    const i2pSender: I2pSamDatagram = (
-      await createDatagram({
+    let i2pSender: I2pSamDatagram = {} as I2pSamDatagram;
+    let i2pRecipient: I2pSamDatagram = {} as I2pSamDatagram;
+    try {
+      console.log('Creating Sender...');
+      i2pSender = await createDatagram({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
           address: SAM_LISTEN_ADDRESS,
           port: SAM_LISTEN_PORT,
           hostForward: SAM_LISTEN_FORWARD,
         },
-      })
-    ).on('data', (data: Buffer) => {
-      expect(data.toString()).to.be.equal(dataToSend.toString());
-      messageCounterA++;
-    });
-    destinationSender = i2pSender.getPublicKey();
+      });
+      i2pSender.on('data', (data: Buffer) => {
+        expect(data.toString()).to.be.equal(dataToSend.toString());
+        messageCounterA++;
+      });
 
-    console.log('Creating Recipient...');
-    const i2pRecipient: I2pSamDatagram = (
-      await createDatagram({
+      destinationSender = i2pSender.getPublicKey();
+
+      console.log('Creating Recipient...');
+      i2pRecipient = await createDatagram({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
           address: SAM_LISTEN_ADDRESS,
           port: SAM_LISTEN_PORT + 1,
           hostForward: SAM_LISTEN_FORWARD,
         },
-      })
-    ).on('data', (data: Buffer) => {
-      expect(data.toString()).to.be.equal(dataToSend.toString());
-      messageCounterB++;
-    });
-    destinationRecipient = i2pRecipient.getPublicKey();
+      });
+      i2pRecipient.on('data', (data: Buffer) => {
+        expect(data.toString()).to.be.equal(dataToSend.toString());
+        messageCounterB++;
+      });
+      destinationRecipient = i2pRecipient.getPublicKey();
 
-    console.log(Date.now() + ' - start sending data...');
-    let sentMsgs = 0;
-    const intervalSender = setInterval(async () => {
-      i2pSender.send(destinationRecipient, dataToSend);
-      sentMsgs++;
-    }, 50);
+      console.log(Date.now() + ' - start sending data...');
+      let sentMsg: number = 0;
+      const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
+        i2pSender.send(destinationRecipient, dataToSend);
+        sentMsg++;
+      }, 50);
 
-    const intervalRecipient = setInterval(async () => {
-      i2pRecipient.send(destinationSender, dataToSend);
-      sentMsgs++;
-    }, 50);
+      const intervalRecipient: NodeJS.Timer = setInterval(async (): Promise<void> => {
+        i2pRecipient.send(destinationSender, dataToSend);
+        sentMsg++;
+      }, 50);
 
-    while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
-      await TestI2pSamDatagram.wait(100);
+      while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
+        await TestI2pSamDatagram.wait(100);
+      }
+      console.log(Date.now() + ' - total Sent: ' + sentMsg);
+      console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10 + '%');
+
+      clearInterval(intervalSender);
+      clearInterval(intervalRecipient);
+    } catch (error: any) {
+      console.debug(error.toString());
+    } finally {
+      Object.keys(i2pSender).length && i2pSender.close();
+      Object.keys(i2pRecipient).length && i2pRecipient.close();
     }
-    console.log(Date.now() + ' - total Sent: ' + sentMsgs);
-    console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsgs) * 1000) / 10 + '%');
-
-    clearInterval(intervalSender);
-    clearInterval(intervalRecipient);
-    i2pSender.close();
-    i2pRecipient.close();
 
     expect(messageCounterA).not.to.be.equal(0);
     expect(messageCounterB).not.to.be.equal(0);
@@ -105,22 +111,26 @@ class TestI2pSamDatagram {
 
   @test
   async failTimeout(): Promise<void> {
+    let datagram: I2pSamDatagram = {} as I2pSamDatagram;
     // timeout error
     try {
-      await createDatagram({
+      datagram = await createDatagram({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP, timeout: 1 },
       });
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('timeout');
+    } finally {
+      Object.keys(datagram).length && datagram.close();
     }
   }
 
   @test
   async failKeys(): Promise<void> {
+    let datagram: I2pSamDatagram = {} as I2pSamDatagram;
     // public key / private key issues
     try {
-      await createDatagram({
+      datagram = await createDatagram({
         sam: {
           host: SAM_HOST,
           portTCP: SAM_PORT_TCP,
@@ -131,6 +141,8 @@ class TestI2pSamDatagram {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('SESSION failed').contains('RESULT=INVALID_KEY');
+    } finally {
+      Object.keys(datagram).length && datagram.close();
     }
   }
 
