@@ -36,15 +36,15 @@ export class I2pSamStream extends I2pSam {
     return await I2pSamStream.make(c);
   }
 
-  static async make(c: Configuration): Promise<I2pSamStream> {
+  static make(c: Configuration): Promise<I2pSamStream> {
     const r: I2pSamStream = new I2pSamStream(c);
-    await r.open();
-    return await new Promise((resolve, reject): void => {
+    return new Promise((resolve, reject): void => {
       (async (r: I2pSamStream): Promise<void> => {
         const t: NodeJS.Timer = setTimeout((): void => {
           reject(new Error('Stream timeout'));
         }, r.timeout * 1000);
         try {
+          await r.open();
           await r.initSession('STREAM');
           await r.connect();
           clearTimeout(t);
