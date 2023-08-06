@@ -91,6 +91,7 @@ export class I2pSam extends EventEmitter {
   }
 
   protected close(): void {
+    this.internalEventEmitter.removeAllListeners();
     this.socketControl.destroy();
   }
 
@@ -100,7 +101,7 @@ export class I2pSam extends EventEmitter {
       const max: string | false = this.config.sam.versionMax || false;
 
       this.internalEventEmitter.removeAllListeners();
-      this.internalEventEmitter.once('error', (error: Error) => reject(error));
+      this.internalEventEmitter.once('error', reject);
       this.internalEventEmitter.once('hello', resolve);
 
       socket.write(
@@ -126,7 +127,7 @@ export class I2pSam extends EventEmitter {
       }
 
       this.internalEventEmitter.removeAllListeners();
-      this.internalEventEmitter.once('error', (error: Error) => reject(error));
+      this.internalEventEmitter.once('error', reject);
       this.internalEventEmitter.once('session', resolve);
 
       s += (this.config.session.options ? ' ' + this.config.session.options : '') + '\n';
