@@ -31,7 +31,6 @@ export class I2pSamRaw extends I2pSam {
   }
 
   static make(c: Configuration): Promise<I2pSamRaw> {
-    const r: I2pSamRaw = new I2pSamRaw(c);
     return new Promise((resolve, reject): void => {
       (async (r: I2pSamRaw): Promise<void> => {
         const t: NodeJS.Timer = setTimeout((): void => {
@@ -40,12 +39,13 @@ export class I2pSamRaw extends I2pSam {
         try {
           await r.open();
           await r.initSession();
-          clearTimeout(t);
           resolve(r);
         } catch (error) {
           reject(error);
+        } finally {
+          clearTimeout(t);
         }
-      })(r);
+      })(new I2pSamRaw(c));
     });
   }
 
