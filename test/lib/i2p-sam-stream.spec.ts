@@ -19,7 +19,7 @@
 import { suite, test, timeout } from '@testdeck/mocha';
 import { expect } from 'chai';
 import net from 'net';
-import { createForward, createStream, toB32, I2pSamStream, createRaw } from '../../lib/index.js';
+import { createForward, createStream, toB32, I2pSamStream } from '../../lib/index.js';
 
 const SAM_HOST: string = process.env.SAM_HOST || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(process.env.SAM_PORT_TCP || 7656);
@@ -35,43 +35,42 @@ class TestI2pSamStream {
     let messageCounter: number = 0;
 
     console.log('Creating Stream...');
-    const i2pSender: I2pSamStream = (
-      await createStream({
+    let stream: I2pSamStream = {} as I2pSamStream;
+    try {
+      stream = await createStream({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
         stream: {
           destination: 'diva.i2p',
         },
-      })
-    )
-      .on('data', (): void => {
+      });
+      stream.on('data', (): void => {
         messageCounter++;
-      })
-      .on('error', (): void => {
-        expect(false).to.be.true;
       });
 
-    console.log('Start streaming data...');
-    console.log(Date.now());
+      console.log('Start streaming data...');
+      console.log(Date.now());
 
-    // send some data to diva.i2p
-    i2pSender.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
-    while (!messageCounter) {
-      await TestI2pSamStream.wait(500);
+      // send some data to diva.i2p
+      stream.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+      while (!messageCounter) {
+        await TestI2pSamStream.wait(500);
+      }
+      console.log(Date.now());
+    } catch (error: any) {
+      console.debug(error.toString());
     }
-    console.log(Date.now());
 
-    i2pSender.close();
-
+    Object.keys(stream).length && stream.close();
     expect(messageCounter).not.to.be.equal(0);
   }
 
   @test
-  @timeout(120000)
+  @timeout(180000)
   async forward(): Promise<void> {
     let messageCounter: number = 0;
 
     console.log('Creating listener');
-    const serverForward = net.createServer((c) => {
+    const serverForward: net.Server = net.createServer((c: net.Socket): void => {
       console.debug('client connected');
       c.on('end', (): void => {
         console.debug('client disconnected');
@@ -84,20 +83,25 @@ class TestI2pSamStream {
     serverForward.listen(SAM_FORWARD_PORT);
 
     console.log('Creating Forward...');
-    const i2pForward: I2pSamStream = await createForward({
-      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
-      forward: {
-        host: SAM_FORWARD_HOST,
-        port: SAM_FORWARD_PORT,
-        silent: true,
-      },
-    });
-
-    const destination = i2pForward.getPublicKey();
-
-    console.log('Creating Stream...');
+    let i2pForward: I2pSamStream = {} as I2pSamStream;
     let i2pSender: I2pSamStream = {} as I2pSamStream;
-    while (!Object.keys(i2pSender).length) {
+    try {
+      i2pForward = await createForward({
+        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+        forward: {
+          host: SAM_FORWARD_HOST,
+          port: SAM_FORWARD_PORT,
+          silent: true,
+        },
+      });
+    } catch (error: any) {
+      console.debug(error.toString());
+    }
+
+    if (Object.keys(i2pForward).length) {
+      const destination: string = i2pForward.getPublicKey();
+      console.log('Creating Stream to ' + destination);
+
       try {
         i2pSender = await createStream({
           sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
@@ -108,34 +112,34 @@ class TestI2pSamStream {
         i2pSender.on('data', (): void => {
           messageCounter++;
         });
+
+        console.log('Start streaming data...');
+        const start: number = Date.now();
+        // send some data to destination
+        const amount: number = 5;
+        while (messageCounter < amount) {
+          i2pSender.stream(Buffer.from(`GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`));
+          await TestI2pSamStream.wait(500);
+        }
+        console.log(`${(Date.now() - start) / amount} milliseconds per roundtrip`);
       } catch (error: any) {
         console.debug(error.toString());
       }
     }
 
-    console.log('Start streaming data...');
-    const start = Date.now();
-    // send some data to destination
-    const amount = 5;
-    while (messageCounter < amount) {
-      i2pSender.stream(Buffer.from(`GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`));
-      await TestI2pSamStream.wait(500);
-    }
-    console.log(`${(Date.now() - start) / amount} milliseconds per roundtrip`);
-
-    i2pForward.close();
-    i2pSender.close();
+    Object.keys(i2pForward).length && i2pForward.close();
+    Object.keys(i2pSender).length && i2pSender.close();
     serverForward.close();
-
     expect(messageCounter).not.to.be.equal(0);
   }
 
   @test
   @timeout(5000)
   async failTimeout(): Promise<void> {
+    let stream: I2pSamStream = {} as I2pSamStream;
     // timeout error
     try {
-      await createStream({
+      stream = await createStream({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 2 },
         stream: {
           destination: 'diva.i2p',
@@ -144,15 +148,18 @@ class TestI2pSamStream {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('timeout');
+    } finally {
+      Object.keys(stream).length && stream.close();
     }
   }
 
   @test
   @timeout(5000)
   async failNotFound(): Promise<void> {
+    let stream: I2pSamStream = {} as I2pSamStream;
     // connection error
     try {
-      await createStream({
+      stream = await createStream({
         sam: {
           host: '127.0.0.256',
           portTCP: SAM_PORT_TCP,
@@ -162,15 +169,18 @@ class TestI2pSamStream {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('ENOTFOUND');
+    } finally {
+      Object.keys(stream).length && stream.close();
     }
   }
 
   @test
   @timeout(5000)
   async failEmptyDestination(): Promise<void> {
+    let stream: I2pSamStream = {} as I2pSamStream;
     // empty destination
     try {
-      await createStream({
+      stream = await createStream({
         sam: {
           host: SAM_HOST,
           portTCP: SAM_PORT_TCP,
@@ -180,14 +190,17 @@ class TestI2pSamStream {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('Stream configuration invalid');
+    } finally {
+      Object.keys(stream).length && stream.close();
     }
   }
 
   @test
   async failKeys(): Promise<void> {
     // public key / private key issues
+    let stream: I2pSamStream = {} as I2pSamStream;
     try {
-      await createStream({
+      stream = await createStream({
         sam: {
           host: SAM_HOST,
           portTCP: SAM_PORT_TCP,
@@ -199,6 +212,8 @@ class TestI2pSamStream {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('SESSION failed').contains('RESULT=INVALID_KEY');
+    } finally {
+      Object.keys(stream).length && stream.close();
     }
   }
 

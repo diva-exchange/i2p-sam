@@ -77,6 +77,9 @@ class TestI2pSamRaw {
     });
     destinationRecipient = i2pRecipient.getPublicKey();
 
+    console.log(Date.now() + ' - send udp to diva.i2p (provoking a lookup)');
+    i2pSender.send('diva.i2p', dataToSend);
+
     console.log(Date.now() + ' - start sending data...');
     let sentMsgs: number = 0;
     const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
@@ -131,25 +134,31 @@ class TestI2pSamRaw {
       sam.send(dest, Buffer.from(crypto.randomFillSync(Buffer.alloc(65 * 1024))));
     });
     expect(e).contains('invalid message length');
+
+    sam.close();
   }
 
   @test
   async failTimeout(): Promise<void> {
+    let f: I2pSamRaw = {} as I2pSamRaw;
     // timeout error
     try {
-      await createRaw({
+      f = await createRaw({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 1 },
       });
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('timeout');
+    } finally {
+      f && f.close();
     }
   }
 
   @test
   async failListen(): Promise<void> {
+    let f: I2pSamRaw = {} as I2pSamRaw;
     try {
-      await createRaw({
+      f = await createRaw({
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
         listen: {
           address: SAM_HOST,
@@ -159,6 +168,8 @@ class TestI2pSamRaw {
       expect(false).to.be.true;
     } catch (error: any) {
       expect(error.toString()).contains('EADDRNOTAVAIL');
+    } finally {
+      f && f.close();
     }
   }
 
