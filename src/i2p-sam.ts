@@ -50,17 +50,16 @@ export class I2pSam extends EventEmitter {
   protected constructor(c: Configuration) {
     super();
     this.config = new Config(c);
+    this.timeout =
+      this.config.sam.timeout && this.config.sam.timeout >= 1 && this.config.sam.timeout <= 300
+        ? this.config.sam.timeout
+        : 60;
     this.publicKey = this.config.sam.publicKey || '';
     this.privateKey = this.config.sam.privateKey || '';
     this.internalEventEmitter = new EventEmitter();
   }
 
   protected async open(): Promise<I2pSam> {
-    this.timeout = this.config.sam.timeout || 0;
-    if (this.timeout < 1 || this.timeout > 300) {
-      throw new Error('I2pSam invalid timeout configuration');
-    }
-
     this.socketControl = new Socket();
     this.socketControl.on('data', (data: Buffer): void => {
       this.parseReply(data);
@@ -95,8 +94,8 @@ export class I2pSam extends EventEmitter {
     this.socketControl.destroy();
   }
 
-  protected async hello(socket: Socket): Promise<void> {
-    return await new Promise((resolve, reject): void => {
+  protected hello(socket: Socket): Promise<void> {
+    return new Promise((resolve, reject): void => {
       const min: string | false = this.config.sam.versionMin || false;
       const max: string | false = this.config.sam.versionMax || false;
 
@@ -113,8 +112,8 @@ export class I2pSam extends EventEmitter {
     });
   }
 
-  protected async initSession(type: string): Promise<I2pSam> {
-    return await new Promise((resolve, reject): void => {
+  protected initSession(type: string): Promise<I2pSam> {
+    return new Promise((resolve, reject): void => {
       let s: string = `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
       switch (type) {
         case 'STREAM':
@@ -181,7 +180,7 @@ export class I2pSam extends EventEmitter {
     return objResult;
   }
 
-  private async generateDestination(): Promise<void> {
+  private generateDestination(): Promise<void> {
     this.publicKey = '';
     this.privateKey = '';
     return new Promise((resolve, reject): void => {
@@ -197,7 +196,7 @@ export class I2pSam extends EventEmitter {
     });
   }
 
-  protected async resolve(name: string): Promise<string> {
+  protected resolve(name: string): Promise<string> {
     return new Promise((resolve, reject): void => {
       if (!/\.i2p$/.test(name)) {
         reject(new Error('Invalid I2P address: ' + name));
