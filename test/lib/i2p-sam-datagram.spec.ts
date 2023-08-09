@@ -78,7 +78,7 @@ class TestI2pSamDatagram {
       });
       destinationRecipient = i2pRecipient.getPublicKey();
 
-      console.log(Date.now() + ' - start sending data...');
+      console.log(Date.now() + ' - start sending messages...');
       let sentMsg: number = 0;
       const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
         i2pSender.send(destinationRecipient, dataToSend);
@@ -93,7 +93,7 @@ class TestI2pSamDatagram {
       while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
         await TestI2pSamDatagram.wait(100);
       }
-      console.log(Date.now() + ' - total Sent: ' + sentMsg);
+      console.log(Date.now() + ' - total sent messages: ' + sentMsg);
       console.log('Arrived: ' + Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10 + '%');
 
       clearInterval(intervalSender);
