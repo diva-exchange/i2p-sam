@@ -51,9 +51,9 @@ export class I2pSam extends EventEmitter {
     super();
     this.config = new Config(c);
     this.timeout =
-      this.config.sam.timeout && this.config.sam.timeout >= 1 && this.config.sam.timeout <= 300
+      this.config.sam.timeout && this.config.sam.timeout >= 1 && this.config.sam.timeout <= 600
         ? this.config.sam.timeout
-        : 90;
+        : 300;
     this.publicKey = this.config.sam.publicKey || '';
     this.privateKey = this.config.sam.privateKey || '';
     this.internalEventEmitter = new EventEmitter();

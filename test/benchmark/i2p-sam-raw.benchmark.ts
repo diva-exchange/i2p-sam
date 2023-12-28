@@ -146,7 +146,8 @@ const jobs: Array<Function> = [
       360,
       500,
       20200,
-      'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false'
+      ''
+      //'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false'
     ).run();
     jobsDone.push(true);
   },

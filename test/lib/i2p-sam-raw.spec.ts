@@ -32,7 +32,7 @@ const SAM_LISTEN_FORWARD: string = process.env.SAM_LISTEN_FORWARD || '172.19.74.
 @suite
 class TestI2pSamRaw {
   @test
-  @timeout(180000)
+  @timeout(300000)
   async send(): Promise<void> {
     let messageCounterA: number = 0;
     let messageCounterB: number = 0;
@@ -86,12 +86,12 @@ class TestI2pSamRaw {
 
       console.log(Date.now() + ' - start sending data...');
       let sentMsg: number = 0;
-      const intervalSender: NodeJS.Timer = setInterval(async (): Promise<void> => {
+      const intervalSender: NodeJS.Timeout = setInterval(async (): Promise<void> => {
         i2pSender.send(destinationRecipient, dataToSend);
         sentMsg++;
       }, 50);
 
-      const intervalRecipient: NodeJS.Timer = setInterval(async (): Promise<void> => {
+      const intervalRecipient: NodeJS.Timeout = setInterval(async (): Promise<void> => {
         i2pRecipient.send(destinationSender, dataToSend);
         sentMsg++;
       }, 50);
@@ -116,7 +116,7 @@ class TestI2pSamRaw {
   }
 
   @test
-  @timeout(90000)
+  @timeout(300000)
   async failEmptyMessage(): Promise<void> {
     const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
     const dest: string = await lookup(config, 'diva.i2p');
@@ -132,7 +132,7 @@ class TestI2pSamRaw {
   }
 
   @test
-  @timeout(90000)
+  @timeout(300000)
   async failTooLargeMessage(): Promise<void> {
     const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
     const dest: string = await lookup(config, 'diva.i2p');

@@ -19,7 +19,6 @@
 import { I2pSam } from './i2p-sam.js';
 import { Configuration, MIN_UDP_MESSAGE_LENGTH, MAX_UDP_MESSAGE_LENGTH } from './config.js';
 import dgram, { Socket } from 'dgram';
-import { clearTimeout } from 'timers';
 
 export class I2pSamRaw extends I2pSam {
   protected isReplyAble: boolean; // whether the udp message contains the message origin
@@ -33,9 +32,9 @@ export class I2pSamRaw extends I2pSam {
   static make(c: Configuration): Promise<I2pSamRaw> {
     return new Promise((resolve, reject): void => {
       (async (r: I2pSamRaw): Promise<void> => {
-        const t: NodeJS.Timer = setTimeout((): void => {
+        const t: NodeJS.Timeout = setTimeout((): void => {
           r.close();
-          reject(new Error('I2pSamRaw timeout'));
+          reject(new Error(`I2pSamRaw timeout (${r.timeout}s)`));
         }, r.timeout * 1000);
         try {
           await r.open();

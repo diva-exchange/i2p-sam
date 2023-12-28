@@ -45,7 +45,7 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  @timeout(60000)
+  @timeout(300000)
   async keys(): Promise<void> {
     const sam: I2pSamRaw = await createRaw({
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
@@ -58,7 +58,7 @@ class TestI2pSamBaseClass {
   }
 
   @test
-  @timeout(10000)
+  @timeout(60000)
   async lookup(): Promise<void> {
     const s: string = await lookup({ sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } }, 'diva.i2p');
     expect(s).not.to.be.empty;

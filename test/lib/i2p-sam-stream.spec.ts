@@ -30,7 +30,7 @@ const SAM_FORWARD_PORT: number = Number(process.env.SAM_PORT_TCP || 20226);
 @suite
 class TestI2pSamStream {
   @test
-  @timeout(120000)
+  @timeout(300000)
   async stream(): Promise<void> {
     let messageCounter: number = 0;
 
@@ -65,7 +65,7 @@ class TestI2pSamStream {
   }
 
   @test
-  @timeout(180000)
+  @timeout(300000)
   async forward(): Promise<void> {
     let messageCounter: number = 0;
 

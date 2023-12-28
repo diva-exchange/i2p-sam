@@ -9,9 +9,8 @@
     "preserveConstEnums": true,
     "removeComments": true,
     "sourceMap": true,
-    "module": "ES2022",
-    "moduleResolution": "NodeNext",
-    "target": "ES2022"
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
   },
   "include": [
     "src/**/*.ts"

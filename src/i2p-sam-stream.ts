@@ -19,7 +19,6 @@
 import { Socket } from 'net';
 import { I2pSam } from './i2p-sam.js';
 import { Configuration } from './config.js';
-import { clearTimeout } from 'timers';
 
 export class I2pSamStream extends I2pSam {
   private socketStream: Socket = {} as Socket;
@@ -39,9 +38,9 @@ export class I2pSamStream extends I2pSam {
   static make(c: Configuration): Promise<I2pSamStream> {
     return new Promise((resolve, reject): void => {
       (async (s: I2pSamStream): Promise<void> => {
-        const t: NodeJS.Timer = setTimeout((): void => {
+        const t: NodeJS.Timeout = setTimeout((): void => {
           s.close();
-          reject(new Error('Stream timeout'));
+          reject(new Error(`Stream timeout (${s.timeout}s)`));
         }, s.timeout * 1000);
         try {
           await s.open();

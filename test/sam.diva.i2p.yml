@@ -1,5 +1,5 @@
 #
-# Apache License - Copyright (c) 2021-2022 diva.exchange
+# Apache License - Copyright (c) 2021-2023 diva.exchange
 #
 # Author/Maintainer: DIVA.EXCHANGE Association <contact@diva.exchange>
 #
@@ -11,9 +11,7 @@ services:
     image: divax/i2p:current
     restart: unless-stopped
     environment:
-      ENABLE_HIDDEN: 1
       ENABLE_SAM: 1
-      BANDWIDTH: P
     volumes:
       - sam.diva.i2p:/home/i2pd/
     networks:

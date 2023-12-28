@@ -18,7 +18,6 @@
 
 import { I2pSamRaw } from './i2p-sam-raw.js';
 import { Configuration } from './config.js';
-import { clearTimeout } from 'timers';
 
 export class I2pSamDatagram extends I2pSamRaw {
   static async createDatagram(c: Configuration): Promise<I2pSamDatagram> {
@@ -28,9 +27,9 @@ export class I2pSamDatagram extends I2pSamRaw {
   static make(c: Configuration): Promise<I2pSamDatagram> {
     return new Promise((resolve, reject): void => {
       (async (d: I2pSamDatagram): Promise<void> => {
-        const t: NodeJS.Timer = setTimeout((): void => {
+        const t: NodeJS.Timeout = setTimeout((): void => {
           d.close();
-          reject(new Error('I2pSamDatagram timeout'));
+          reject(new Error(`I2pSamDatagram timeout (${d.timeout}s)`));
         }, d.timeout * 1000);
         try {
           await d.open();
