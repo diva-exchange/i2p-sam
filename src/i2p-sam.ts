@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 diva.exchange
+ * Copyright 2021-2025 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,14 +85,17 @@ export class I2pSam extends EventEmitter {
         await this.generateDestination();
       }
       return this;
-    } catch (error: any) {
+    } catch (e: unknown) {
+      const error = e as string;
       return Promise.reject(new Error(error.toString()));
     }
   }
 
   protected close(): void {
     this.internalEventEmitter.removeAllListeners();
-    Object.keys(this.socketControl).length && this.socketControl.destroy();
+    if (Object.keys(this.socketControl).length) {
+      this.socketControl.destroy();
+    }
   }
 
   protected hello(socket: Socket): Promise<void> {
@@ -107,7 +110,9 @@ export class I2pSam extends EventEmitter {
       socket.write(
         `HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`,
         (error: Error | undefined): void => {
-          error && reject(error);
+          if (error) {
+            reject(error);
+          }
         }
       );
     });
@@ -132,7 +137,9 @@ export class I2pSam extends EventEmitter {
 
       s += (this.config.session.options ? ' ' + this.config.session.options : '') + '\n';
       this.socketControl.write(s, (error: Error | undefined): void => {
-        error && reject(error);
+        if (error) {
+          reject(error);
+        }
       });
     });
   }
@@ -192,7 +199,9 @@ export class I2pSam extends EventEmitter {
       this.internalEventEmitter.once('destination', resolve);
 
       this.socketControl.write('DEST GENERATE\n', (error: Error | undefined): void => {
-        error && this.internalEventEmitter.emit('error', error);
+        if (error) {
+          this.internalEventEmitter.emit('error', error);
+        }
       });
     });
   }
@@ -210,7 +219,9 @@ export class I2pSam extends EventEmitter {
       this.internalEventEmitter.once('naming', resolve);
 
       this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error: Error | undefined): void => {
-        error && this.internalEventEmitter.emit('error', error);
+        if (error) {
+          this.internalEventEmitter.emit('error', error);
+        }
       });
     });
   }

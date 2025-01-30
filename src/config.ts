@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 diva.exchange
+ * Copyright 2021-2025 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ export class Config {
     this.sam.portUDP = Number(this.sam.portUDP) > 0 ? Config.port(Number(this.sam.portUDP)) : 0;
   }
 
-  private static b(n: any, min: number, max: number): number {
+  private static b(n: number | string, min: number, max: number): number {
     n = Number(n);
     min = Math.floor(min);
     max = Math.ceil(max);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 diva.exchange
+ * Copyright 2021-2025 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,9 @@ export class I2pSamStream extends I2pSam {
   }
 
   close(): void {
-    Object.keys(this.socketStream).length && this.socketStream.destroy();
+    if (Object.keys(this.socketStream).length) {
+      this.socketStream.destroy();
+    }
     super.close();
   }
 
@@ -119,7 +121,9 @@ export class I2pSamStream extends I2pSam {
 
   stream(msg: Buffer): void {
     this.socketStream.write(msg, (error: Error | undefined): void => {
-      error && this.emit('error', error || new Error('Failed to write to stream'));
+      if (error) {
+        this.emit('error', error || new Error('Failed to write to stream'));
+      }
     });
   }
 }

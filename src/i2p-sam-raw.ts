@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 diva.exchange
+ * Copyright 2021-2025 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,8 +105,12 @@ export class I2pSamRaw extends I2pSam {
   }
 
   close(): void {
-    Object.keys(this.socketControlUDP).length && this.socketControlUDP.close();
-    Object.keys(this.socketListen).length && this.socketListen.close();
+    if (Object.keys(this.socketControlUDP).length) {
+      this.socketControlUDP.close();
+    }
+    if (Object.keys(this.socketListen).length) {
+      this.socketListen.close();
+    }
     super.close();
   }
 
@@ -137,11 +141,14 @@ export class I2pSamRaw extends I2pSam {
         this.config.sam.portUDP,
         this.config.sam.host,
         (error: Error | null): void => {
-          error && this.emit('error', error);
+          if (error) {
+            this.emit('error', error);
+          }
         }
       );
-    } catch (error: any) {
-      this.emit('error', new Error(error.toString()));
+    } catch (e: unknown) {
+      const error = e as string;
+      this.emit('error', new Error(error));
     }
   }
 }

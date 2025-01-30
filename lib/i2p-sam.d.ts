@@ -1,6 +1,3 @@
-/// <reference types="node" resolution-mode="require"/>
-/// <reference types="node" resolution-mode="require"/>
-/// <reference types="node" resolution-mode="require"/>
 import { EventEmitter } from 'events';
 import { Config, Configuration } from './config.js';
 import { Socket } from 'net';

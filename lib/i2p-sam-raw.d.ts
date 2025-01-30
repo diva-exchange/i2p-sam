@@ -1,4 +1,3 @@
-/// <reference types="node" resolution-mode="require"/>
 import { I2pSam } from './i2p-sam.js';
 import { Configuration } from './config.js';
 export declare class I2pSamRaw extends I2pSam {
