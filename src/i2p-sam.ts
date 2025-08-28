@@ -109,7 +109,7 @@ export class I2pSam extends EventEmitter {
 
       socket.write(
         `HELLO VERSION${min ? ' MIN=' + min : ''}${max ? ' MAX=' + max : ''}\n`,
-        (error: Error | undefined): void => {
+        (error: Error | null | undefined): void => {
           if (error) {
             reject(error);
           }
@@ -136,7 +136,7 @@ export class I2pSam extends EventEmitter {
       this.internalEventEmitter.once('session', resolve);
 
       s += (this.config.session.options ? ' ' + this.config.session.options : '') + '\n';
-      this.socketControl.write(s, (error: Error | undefined): void => {
+      this.socketControl.write(s, (error: Error | null | undefined): void => {
         if (error) {
           reject(error);
         }
@@ -198,7 +198,7 @@ export class I2pSam extends EventEmitter {
       });
       this.internalEventEmitter.once('destination', resolve);
 
-      this.socketControl.write('DEST GENERATE\n', (error: Error | undefined): void => {
+      this.socketControl.write('DEST GENERATE\n', (error: Error | null | undefined): void => {
         if (error) {
           this.internalEventEmitter.emit('error', error);
         }
@@ -218,7 +218,7 @@ export class I2pSam extends EventEmitter {
       });
       this.internalEventEmitter.once('naming', resolve);
 
-      this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error: Error | undefined): void => {
+      this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error: Error | null | undefined): void => {
         if (error) {
           this.internalEventEmitter.emit('error', error);
         }

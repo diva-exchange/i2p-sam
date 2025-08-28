@@ -120,7 +120,7 @@ export class I2pSamStream extends I2pSam {
   }
 
   stream(msg: Buffer): void {
-    this.socketStream.write(msg, (error: Error | undefined): void => {
+    this.socketStream.write(msg, (error?: Error | null): void => {
       if (error) {
         this.emit('error', error || new Error('Failed to write to stream'));
       }
