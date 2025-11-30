@@ -13,6 +13,4 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: develop-deno-i2p-sam
-      - run: npx jsr publish --no-check
+      - run: npx jsr publish
