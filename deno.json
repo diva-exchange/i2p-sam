@@ -1,5 +1,5 @@
 {
-  "name": "@ip2/sam",
+  "name": "@i2p/sam",
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "author": "DIVA.EXCHANGE Association <contact@diva.exchange> (https://diva.exchange)",
   "license": "Apache-2.0",
