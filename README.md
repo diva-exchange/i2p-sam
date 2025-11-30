@@ -1,3 +1,5 @@
+[![JSR Publish](https://github.com/diva-exchange/i2p-sam/actions/workflows/publish.yml/badge.svg?branch=develop-deno-i2p-sam)](https://github.com/diva-exchange/i2p-sam/actions/workflows/publish.yml)
+
 # I2P SAM
 
 An I2P SAM library: enabling applications to communicate through the I2P
