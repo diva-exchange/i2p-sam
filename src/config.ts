@@ -115,15 +115,22 @@ export class Config {
     this.session.id = this.session.id || nanoid(DEFAULT_LENGTH_SESSION);
     this.stream = { ...DEFAULT_CONFIGURATION.stream, ...(c.stream || {}) };
     this.forward = { ...DEFAULT_CONFIGURATION.forward, ...(c.forward || {}) };
-    this.forward.port = Number(this.forward.port) > 0 ? Config.port(Number(this.forward.port)) : 0;
+    this.forward.port = Number(this.forward.port) > 0
+      ? Config.port(Number(this.forward.port))
+      : 0;
     this.listen = { ...DEFAULT_CONFIGURATION.listen, ...(c.listen || {}) };
-    this.listen.port = Number(this.listen.port) > 0 ? Config.port(Number(this.listen.port)) : 0;
+    this.listen.port = Number(this.listen.port) > 0
+      ? Config.port(Number(this.listen.port))
+      : 0;
     this.listen.hostForward = this.listen.hostForward || this.listen.address;
-    this.listen.portForward =
-      Number(this.listen.portForward) > 0 ? Config.port(Number(this.listen.portForward)) : this.listen.port;
+    this.listen.portForward = Number(this.listen.portForward) > 0
+      ? Config.port(Number(this.listen.portForward))
+      : this.listen.port;
     this.sam = { ...DEFAULT_CONFIGURATION.sam, ...(c.sam || {}) };
     this.sam.portTCP = Config.port(this.sam.portTCP);
-    this.sam.portUDP = Number(this.sam.portUDP) > 0 ? Config.port(Number(this.sam.portUDP)) : 0;
+    this.sam.portUDP = Number(this.sam.portUDP) > 0
+      ? Config.port(Number(this.sam.portUDP))
+      : 0;
   }
 
   private static b(n: number | string, min: number, max: number): number {

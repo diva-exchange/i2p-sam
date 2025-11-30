@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 diva.exchange
+ * Copyright 2021-2025 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,20 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { I2pSamRaw } from './i2p-sam-raw.js';
-import { Configuration } from './config.js';
+import { clearTimeout, setTimeout } from 'node:timers';
+import { I2pSamRaw } from './i2p-sam-raw.ts';
+import type { Configuration } from './config.ts';
+
+export function createDatagram(c: Configuration): Promise<I2pSamDatagram> {
+  return I2pSamDatagram.createDatagram(c);
+}
 
 export class I2pSamDatagram extends I2pSamRaw {
   static async createDatagram(c: Configuration): Promise<I2pSamDatagram> {
     return await I2pSamDatagram.make(c);
   }
 
-  static make(c: Configuration): Promise<I2pSamDatagram> {
+  public static override make(c: Configuration): Promise<I2pSamDatagram> {
     return new Promise((resolve, reject): void => {
       (async (d: I2pSamDatagram): Promise<void> => {
         const t: NodeJS.Timeout = setTimeout((): void => {
@@ -33,7 +38,7 @@ export class I2pSamDatagram extends I2pSamRaw {
         }, d.timeout * 1000);
         try {
           await d.open();
-          await d.initSession();
+          await d.initSession('DATAGRAM');
           resolve(d);
         } catch (error) {
           d.close();
@@ -48,10 +53,5 @@ export class I2pSamDatagram extends I2pSamRaw {
   protected constructor(c: Configuration) {
     super(c);
     this.isReplyAble = true;
-  }
-
-  protected async initSession(): Promise<I2pSamDatagram> {
-    await super.initSession('DATAGRAM');
-    return this;
   }
 }

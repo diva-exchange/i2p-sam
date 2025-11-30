@@ -1,27 +1,34 @@
 # I2P SAM
-An I2P SAM library: enabling applications to communicate through the I2P network. 
 
-Long story short: I2P is an anonymous network layer allowing censorship-resistant and end-to-end-encrypted communication. I2P is a fully distributed, "privacy-by-design" peer-to-peer network.
+An I2P SAM library: enabling applications to communicate through the I2P
+network.
 
-To get I2P up and running, take a look at the project: https://github.com/diva-exchange/i2p
+Long story short: I2P is an anonymous network layer allowing
+censorship-resistant and end-to-end-encrypted communication. I2P is a fully
+distributed, "privacy-by-design" peer-to-peer network.
+
+To get I2P up and running, take a look at the project:
+https://github.com/diva-exchange/i2p
 
 ## Use Cases
-I2P is an instantly available peer-to-peer network which can be used for things like:
-* chat, social media and alike - all private and secure
-* distributed databases, aka blockchains (see https://testnet.diva.exchange as an example)
-* gaming, file sharing and ... whatever else you come up with
 
-I2P is fully distributed, well researched and gets further developed by a competent community.
+I2P is an instantly available peer-to-peer network which can be used for things
+like:
 
-This I2P SAM library helps developers to create an I2P application quickly and hassle-free.  
+- chat, social media and alike - all private and secure
+- distributed databases, aka blockchains (see https://testnet.diva.exchange as
+  an example)
+- gaming, file sharing and ... whatever else you come up with
+
+I2P is fully distributed, well researched and gets further developed by a
+competent community.
+
+This I2P SAM library helps developers to create an I2P application quickly and
+hassle-free.
 
 ## Get Started
 
-`npm i @diva.exchange/i2p-sam`
-
-or, lighter, without developer dependencies:
-
-`npm i --omit dev @diva.exchange/i2p-sam`
+`deno add @i2p/sam`
 
 ## Quick Start - Examples
 
@@ -30,7 +37,7 @@ or, lighter, without developer dependencies:
 Send an HTTP GET request to diva.i2p and output the response:
 
 ```
-import { createStream } from '@diva.exchange/i2p-sam';
+import { createStream } from '@i2p/sam';
 
 (async () => {
 
@@ -59,7 +66,7 @@ import { createStream } from '@diva.exchange/i2p-sam';
 Forward incoming streaming data to a local socket server:
 
 ```
-import { createStream, createForward, I2pSamStream } from '@diva.exchange/i2p-sam';
+import { createStream, createForward, I2pSamStream } from '@i2p/sam';
 import net from 'net';
 
 (async () => {
@@ -106,12 +113,14 @@ import net from 'net';
 
 ### How to Use Reply-able Datagrams
 
-NOTE: reply-able datagrams contain the origin of the data. An "origin" is defined as the public key of a node in the I2P network. 
+NOTE: reply-able datagrams contain the origin of the data. An "origin" is
+defined as the public key of a node in the I2P network.
 
-Send reply-able UDP messages from peer **A** to peer **B** through the I2P network:
+Send reply-able UDP messages from peer **A** to peer **B** through the I2P
+network:
 
 ```
-import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
+import { createDatagram, toB32 } from '@i2p/sam';
 
 (async () => {
   // instantiate Peer A
@@ -155,12 +164,13 @@ import { createDatagram, toB32 } from '@diva.exchange/i2p-sam';
 
 ### How to Use Raw Datagrams
 
-NOTE: raw datagrams do not contain the "origin" of the data. A typical use case for raw datagrams: broadcasting of data. Raw datagrams are lean.
+NOTE: raw datagrams do not contain the "origin" of the data. A typical use case
+for raw datagrams: broadcasting of data. Raw datagrams are lean.
 
 Send raw UDP messages from peer **A** to peer **B** through the I2P network:
 
 ```
-import { createRaw } from '@diva.exchange/i2p-sam';
+import { createRaw } from '@i2p/sam';
 
 (async () => {
   // instantiate Peer A
@@ -207,10 +217,10 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 
 Get the public key of the local destination.
 
-Example: 
+Example:
 
 ```
-import { createDatagram } from '@diva.exchange/i2p-sam';
+import { createDatagram } from '@i2p/sam';
 
 createDatagram({
   sam: {
@@ -224,10 +234,10 @@ createDatagram({
 
 Get the private key of the local destination.
 
-Example: 
+Example:
 
 ```
-import { createDatagram } from '@diva.exchange/i2p-sam';
+import { createDatagram } from '@i2p/sam';
 
 createDatagram({
   sam: {
@@ -241,10 +251,10 @@ createDatagram({
 
 Get the public and private key of the local destination.
 
-Example: 
+Example:
 
 ```
-import { createStream } from '@diva.exchange/i2p-sam';
+import { createStream } from '@i2p/sam';
 
 createStream({
   sam: {
@@ -261,10 +271,10 @@ createStream({
 
 Close a SAM connection.
 
-Example: 
+Example:
 
 ```
-import { createRaw } from '@diva.exchange/i2p-sam';
+import { createRaw } from '@i2p/sam';
 
 (async () => {
   const sam = await createRaw({
@@ -280,12 +290,13 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 
 ### toB32(destination: string): string
 
-Convert a destination to a b32 address (without any extensions - just a Base32 string).
+Convert a destination to a b32 address (without any extensions - just a Base32
+string).
 
-Example: 
+Example:
 
 ```
-import { toB32 } from '@diva.exchange/i2p-sam';
+import { toB32 } from '@i2p/sam';
 
 console.log(toB32('[some base64-encoded destination]'));
 ```
@@ -294,10 +305,10 @@ console.log(toB32('[some base64-encoded destination]'));
 
 Create a new local destination and return its properties.
 
-Example: 
+Example:
 
 ```
-import { createLocalDestination } from '@diva.exchange/i2p-sam';
+import { createLocalDestination } from '@i2p/sam';
 
 createLocalDestination({
   sam: {
@@ -307,15 +318,16 @@ createLocalDestination({
 }).then((obj) => console.log(obj));
 ```
 
-
 ### lookup(c: Configuration, name: string): Promise\<string\>
 
-Lookup (aka resolve) an I2P address (like diva.i2p or also a .b32.i2p address) to a destination. The destination, which is the public key, is a base64 encoded string.
+Lookup (aka resolve) an I2P address (like diva.i2p or also a .b32.i2p address)
+to a destination. The destination, which is the public key, is a base64 encoded
+string.
 
-Example: 
+Example:
 
 ```
-import { lookup } from '@diva.exchange/i2p-sam';
+import { lookup } from '@i2p/sam';
 
 lookup({
   sam: {
@@ -327,14 +339,14 @@ lookup({
 
 ### stream(msg: Buffer)
 
-Example: see the _Get Started: How to Use Streams_ above. 
-
+Example: see the _Get Started: How to Use Streams_ above.
 
 ### send(destination: string, msg: Buffer)
 
-Example: see _Get Started: How to Use Datagrams_ above. 
+Example: see _Get Started: How to Use Datagrams_ above.
 
 ### Configuration and its Defaults
+
 ```
 type tSession = {
   id?: string;
@@ -420,13 +432,15 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
 ### Events
 
 #### data
+
 Incoming data.
 
 #### error
+
 Generic Error event - emitted if sockets report errors.
 
 ```
-import { createRaw } from '@diva.exchange/i2p-sam';
+import { createRaw } from '@i2p/sam';
 
 (async () => {
   const sam = await createRaw({
@@ -440,16 +454,19 @@ import { createRaw } from '@diva.exchange/i2p-sam';
 ```
 
 #### close
-Emitted if one of the involved sockets got closed.  
 
+Emitted if one of the involved sockets got closed.
 
 ## How to Run Unit Tests
 
-Assumptions: 
-1. git, node and npm is available. 
-2. docker and docker-compose is available. 
+Assumptions:
 
-Clone the source code from git `git clone https://github.com/diva-exchange/i2p-sam.git` and enter the folder `i2p-sam`.
+1. git and deno is available.
+2. docker and docker-compose is available.
+
+Clone the source code from git
+`git clone https://github.com/diva-exchange/i2p-sam.git` and enter the folder
+`i2p-sam`.
 
 Prepare the test environment by creating the docker container:
 
@@ -457,45 +474,54 @@ Prepare the test environment by creating the docker container:
 docker compose -f test/sam.diva.i2p.yml up -d
 ```
 
-Check whether the I2P test node is properly running by accessing the local console on: http://172.19.74.11:7070.
+Check whether the I2P test node is properly running by accessing the local
+console on: http://172.19.74.11:7070.
 
-To modify the IP address of the local console, adapt the file `test/sam.diva.i2p.yml`.
+To modify the IP address of the local console, adapt the file
+`test/sam.diva.i2p.yml`.
 
-After the docker container is _running for about five minutes_ (reason: the I2P network needs some minutes to integrate), execute the unit tests:
+After the docker container is _running for about five minutes_ (reason: the I2P
+network needs some minutes to integrate), execute the unit tests:
 
 ```
-npm run test
+deno task test
 ```
-Executing the unit tests will take around 5 minutes. Reason: the communication via I2P gets tested - which is the purpose of this library.
+
+Executing the unit tests will take around 5 minutes. Reason: the communication
+via I2P gets tested - which is the purpose of this library.
 
 Stop the container (and purge all data within):
+
 ```
 docker compose -f test/sam.diva.i2p.yml down --volumes
 ```
- 
 
 ## Linting
 
 To lint the code, use
+
 ```
-npm run lint
+deno task lint
 ```
 
 ## Contributions
+
 Contributions are very welcome. This is the general workflow:
 
-1. Fork from https://github.com/diva-exchange/divachain/
+1. Fork from https://github.com/diva-exchange/i2p-sam/
 2. Pull the forked project to your local developer environment
 3. Make your changes, test, commit and push them
 4. Create a new pull request on github.com
 
-It is strongly recommended to sign your commits: https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key
+It is strongly recommended to sign your commits:
+https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key
 
 If you have questions, please just contact us (see below).
 
 ## Donations
 
-Your donation goes entirely to the project. Your donation makes the development of DIVA.EXCHANGE faster. Thanks a lot.
+Your donation goes entirely to the project. Your donation makes the development
+of DIVA.EXCHANGE faster. Thanks a lot.
 
 ### XMR
 
@@ -513,9 +539,11 @@ or via https://www.diva.exchange/en/join-in/
 
 ## Contact the Developers
 
-On [DIVA.EXCHANGE](https://www.diva.exchange) you'll find various options to get in touch with the team.
+On [DIVA.EXCHANGE](https://www.diva.exchange) you'll find various options to get
+in touch with the team.
 
-Talk to us via [Telegram](https://t.me/diva_exchange_chat_de) (English or German).
+Talk to us via [Telegram](https://t.me/diva_exchange_chat_de) (English or
+German).
 
 ## References
 

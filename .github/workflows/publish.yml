@@ -1,28 +1,16 @@
-name: Publish Package
+name: JSR Publish
 
 on:
   push:
-    tags:
-      - 'v*'
-
-permissions:
-  id-token: write  # Required for OIDC
-  contents: read
+    branches:
+      - develop-deno-i2p-sam
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      # Ensure npm 11.5.1 or later is installed
-      - name: Update npm
-        run: npm install -g npm@latest
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm publish
+      - uses: actions/checkout@v5
+      - run: npx jsr publish

@@ -16,11 +16,11 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
+import crypto from 'node:crypto';
+import { EventEmitter } from 'node:events';
+import { Socket } from 'node:net';
 import { base32 } from 'rfc4648';
-import crypto from 'crypto';
-import { EventEmitter } from 'events';
-import { Config, Configuration } from './config.js';
-import { Socket } from 'net';
+import { Config, type Configuration } from './config.ts';
 
 const REPLY_HELLO: string = 'HELLOREPLY';
 const REPLY_DEST: string = 'DESTREPLY';
@@ -36,6 +36,16 @@ const KEY_VALUE: string = 'VALUE';
 
 const VALUE_OK: string = 'OK';
 
+export function toB32(base64Destination: string): string {
+  return I2pSam.toB32(base64Destination);
+}
+export async function createLocalDestination(c: Configuration): Promise<{ address: string; public: string; private: string }> {
+  return await I2pSam.createLocalDestination(c);
+}
+export async function lookup(c: Configuration, address: string): Promise<string> {
+  return await I2pSam.lookup(c, address);
+}
+
 export class I2pSam extends EventEmitter {
   protected config: Config;
   protected socketControl: Socket = {} as Socket;
@@ -50,10 +60,10 @@ export class I2pSam extends EventEmitter {
   protected constructor(c: Configuration) {
     super();
     this.config = new Config(c);
-    this.timeout =
-      this.config.sam.timeout && this.config.sam.timeout >= 1 && this.config.sam.timeout <= 600
-        ? this.config.sam.timeout
-        : 300;
+    this.timeout = this.config.sam.timeout && this.config.sam.timeout >= 1 &&
+        this.config.sam.timeout <= 600
+      ? this.config.sam.timeout
+      : 300;
     this.publicKey = this.config.sam.publicKey || '';
     this.privateKey = this.config.sam.privateKey || '';
     this.internalEventEmitter = new EventEmitter();
@@ -61,7 +71,7 @@ export class I2pSam extends EventEmitter {
 
   protected async open(): Promise<I2pSam> {
     this.socketControl = new Socket();
-    this.socketControl.on('data', (data: Buffer): void => {
+    this.socketControl.on('data', (data: Uint8Array): void => {
       this.parseReply(data);
     });
     this.socketControl.on('close', (): void => {
@@ -71,7 +81,10 @@ export class I2pSam extends EventEmitter {
     try {
       await new Promise((resolve, reject): void => {
         this.socketControl.once('error', reject);
-        this.socketControl.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, (): void => {
+        this.socketControl.connect({
+          host: this.config.sam.host,
+          port: this.config.sam.portTCP,
+        }, (): void => {
           this.socketControl.removeAllListeners('error');
           this.socketControl.on('error', (error: Error): void => {
             this.emit('error', error);
@@ -86,8 +99,7 @@ export class I2pSam extends EventEmitter {
       }
       return this;
     } catch (e: unknown) {
-      const error = e as string;
-      return Promise.reject(new Error(error.toString()));
+      return Promise.reject((e as Error));
     }
   }
 
@@ -113,21 +125,23 @@ export class I2pSam extends EventEmitter {
           if (error) {
             reject(error);
           }
-        }
+        },
       );
     });
   }
 
   protected initSession(type: string): Promise<I2pSam> {
     return new Promise((resolve, reject): void => {
-      let s: string = `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
+      let s: string =
+        `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
       switch (type) {
         case 'STREAM':
           s += 'STYLE=STREAM';
           break;
         case 'DATAGRAM':
         case 'RAW':
-          s += `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}`;
+          s +=
+            `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}`;
           break;
       }
 
@@ -135,7 +149,9 @@ export class I2pSam extends EventEmitter {
       this.internalEventEmitter.once('error', reject);
       this.internalEventEmitter.once('session', resolve);
 
-      s += (this.config.session.options ? ' ' + this.config.session.options : '') + '\n';
+      s +=
+        (this.config.session.options ? ' ' + this.config.session.options : '') +
+        '\n';
       this.socketControl.write(s, (error: Error | null | undefined): void => {
         if (error) {
           reject(error);
@@ -144,7 +160,7 @@ export class I2pSam extends EventEmitter {
     });
   }
 
-  protected parseReply(data: Buffer) {
+  protected parseReply(data: Uint8Array): void {
     const sData: string = data.toString().trim();
     const [c, s] = sData.split(' ');
     const oKeyValue = I2pSam.parseReplyKeyValue(sData);
@@ -152,27 +168,48 @@ export class I2pSam extends EventEmitter {
     // command reply handling
     switch (c + s) {
       case REPLY_HELLO:
-        return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.internalEventEmitter.emit('error', new Error('HELLO failed: ' + sData))
+        oKeyValue[KEY_RESULT] !== VALUE_OK
+          ? this.internalEventEmitter.emit(
+            'error',
+            new Error('HELLO failed: ' + sData),
+          )
           : this.internalEventEmitter.emit('hello');
+        return;
       case REPLY_DEST:
         this.publicKey = oKeyValue[KEY_PUB] || '';
         this.privateKey = oKeyValue[KEY_PRIV] || '';
-        return !this.publicKey || !this.privateKey
-          ? this.internalEventEmitter.emit('error', new Error('DEST failed: ' + sData))
+        !this.publicKey || !this.privateKey
+          ? this.internalEventEmitter.emit(
+            'error',
+            new Error('DEST failed: ' + sData),
+          )
           : this.internalEventEmitter.emit('destination');
+        return;
       case REPLY_SESSION:
-        return oKeyValue[KEY_RESULT] !== VALUE_OK || !(oKeyValue[KEY_DESTINATION] || '')
-          ? this.internalEventEmitter.emit('error', new Error('SESSION failed: ' + sData))
+        oKeyValue[KEY_RESULT] !== VALUE_OK ||
+          !(oKeyValue[KEY_DESTINATION] || '')
+          ? this.internalEventEmitter.emit(
+            'error',
+            new Error('SESSION failed: ' + sData),
+          )
           : this.internalEventEmitter.emit('session', this);
+        return;
       case REPLY_NAMING:
-        return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.internalEventEmitter.emit('error', new Error('NAMING failed: ' + sData))
+        oKeyValue[KEY_RESULT] !== VALUE_OK
+          ? this.internalEventEmitter.emit(
+            'error',
+            new Error('NAMING failed: ' + sData),
+          )
           : this.internalEventEmitter.emit('naming', oKeyValue[KEY_VALUE]);
+        return;
       case REPLY_STREAM:
-        return oKeyValue[KEY_RESULT] !== VALUE_OK
-          ? this.internalEventEmitter.emit('error', new Error('STREAM failed: ' + sData))
+        oKeyValue[KEY_RESULT] !== VALUE_OK
+          ? this.internalEventEmitter.emit(
+            'error',
+            new Error('STREAM failed: ' + sData),
+          )
           : this.internalEventEmitter.emit('stream');
+        return;
       default:
         return;
     }
@@ -198,11 +235,14 @@ export class I2pSam extends EventEmitter {
       });
       this.internalEventEmitter.once('destination', resolve);
 
-      this.socketControl.write('DEST GENERATE\n', (error: Error | null | undefined): void => {
-        if (error) {
-          this.internalEventEmitter.emit('error', error);
-        }
-      });
+      this.socketControl.write(
+        'DEST GENERATE\n',
+        (error: Error | null | undefined): void => {
+          if (error) {
+            this.internalEventEmitter.emit('error', error);
+          }
+        },
+      );
     });
   }
 
@@ -218,50 +258,70 @@ export class I2pSam extends EventEmitter {
       });
       this.internalEventEmitter.once('naming', resolve);
 
-      this.socketControl.write(`NAMING LOOKUP NAME=${name}\n`, (error: Error | null | undefined): void => {
-        if (error) {
-          this.internalEventEmitter.emit('error', error);
-        }
-      });
+      this.socketControl.write(
+        `NAMING LOOKUP NAME=${name}\n`,
+        (error: Error | null | undefined): void => {
+          if (error) {
+            this.internalEventEmitter.emit('error', error);
+          }
+        },
+      );
     });
   }
 
-  getB32Address(): string {
+  public getB32Address(): string {
     return I2pSam.toB32(this.publicKey) + '.b32.i2p';
   }
 
-  getPublicKey(): string {
+  public getPublicKey(): string {
     return this.publicKey;
   }
 
-  getPrivateKey(): string {
+  public getPrivateKey(): string {
     return this.privateKey;
   }
 
-  getKeyPair(): { public: string; private: string } {
+  public getKeyPair(): { public: string; private: string } {
     return {
       public: this.getPublicKey(),
       private: this.getPrivateKey(),
     };
   }
 
-  static toB32(base64Destination: string): string {
-    const s: Buffer = Buffer.from(base64Destination.replace(/-/g, '+').replace(/~/g, '/'), 'base64');
-    return base32.stringify(crypto.createHash('sha256').update(s).digest(), { pad: false }).toLowerCase();
+  public static toB32(base64Destination: string): string {
+    const i: string = base64Destination.replace(/-/g, '+').replace(/~/g, '/');
+    const s: Uint8Array = new Uint8Array(atob(i).length);
+    s.setFromBase64(i);
+    return base32.stringify(crypto.createHash('sha256').update(s).digest(), {
+      pad: false,
+    }).toLowerCase();
   }
 
-  static async createLocalDestination(c: Configuration): Promise<{ address: string; public: string; private: string }> {
+  public static async createLocalDestination(
+    c: Configuration,
+  ): Promise<{ address: string; public: string; private: string }> {
     const sam: I2pSam = new I2pSam(c);
-    await sam.open();
-    sam.close();
-    return { address: sam.getB32Address(), public: sam.getPublicKey(), private: sam.getPrivateKey() };
+    try {
+      await sam.open();
+    } finally {
+      sam.close();
+    }
+    return {
+      address: sam.getB32Address(),
+      public: sam.getPublicKey(),
+      private: sam.getPrivateKey(),
+    };
   }
 
-  static async lookup(c: Configuration, address: string): Promise<string> {
+  public static async lookup(c: Configuration, address: string): Promise<string> {
     const sam: I2pSam = new I2pSam(c);
-    await sam.open();
-    const s: string = await sam.resolve(address);
-    sam.close();
+    let s: string = '';
+    try {
+      await sam.open();
+      s = await sam.resolve(address);
+    } finally {
+      sam.close();
+    }
     return s;
   }
 }

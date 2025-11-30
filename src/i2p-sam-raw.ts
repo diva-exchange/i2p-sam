@@ -16,20 +16,30 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { I2pSam } from './i2p-sam.js';
-import { Configuration, MIN_UDP_MESSAGE_LENGTH, MAX_UDP_MESSAGE_LENGTH } from './config.js';
-import dgram, { Socket } from 'dgram';
+import { concat } from '@std/bytes';
+import dgram, { type Socket } from 'node:dgram';
+import { clearTimeout, setTimeout } from 'node:timers';
+import { I2pSam } from './i2p-sam.ts';
+import {
+  type Configuration,
+  MAX_UDP_MESSAGE_LENGTH,
+  MIN_UDP_MESSAGE_LENGTH,
+} from './config.ts';
+
+export async function createRaw(c: Configuration): Promise<I2pSamRaw> {
+  return await I2pSamRaw.createRaw(c);
+}
 
 export class I2pSamRaw extends I2pSam {
   protected isReplyAble: boolean; // whether the udp message contains the message origin
   private socketControlUDP: Socket; // outgoing
   private socketListen: Socket; // incoming
 
-  static async createRaw(c: Configuration): Promise<I2pSamRaw> {
+  public static async createRaw(c: Configuration): Promise<I2pSamRaw> {
     return await I2pSamRaw.make(c);
   }
 
-  static make(c: Configuration): Promise<I2pSamRaw> {
+  public static make(c: Configuration): Promise<I2pSamRaw> {
     return new Promise((resolve, reject): void => {
       (async (r: I2pSamRaw): Promise<void> => {
         const t: NodeJS.Timeout = setTimeout((): void => {
@@ -38,7 +48,7 @@ export class I2pSamRaw extends I2pSam {
         }, r.timeout * 1000);
         try {
           await r.open();
-          await r.initSession();
+          await r.initSession('RAW');
           resolve(r);
         } catch (error) {
           r.close();
@@ -57,7 +67,7 @@ export class I2pSamRaw extends I2pSam {
     this.socketListen = {} as Socket;
   }
 
-  protected async open(): Promise<I2pSamRaw> {
+  protected override async open(): Promise<I2pSamRaw> {
     await super.open();
 
     this.socketControlUDP = dgram.createSocket({ type: 'udp4' });
@@ -70,16 +80,16 @@ export class I2pSamRaw extends I2pSam {
       return Promise.resolve(this);
     }
 
-    this.socketListen = dgram.createSocket('udp4', (msg: Buffer): void => {
+    this.socketListen = dgram.createSocket('udp4', (msg: Uint8Array): void => {
       try {
         let fromDestination: string = '';
-        let message: Buffer;
+        let message: Uint8Array;
         if (this.isReplyAble) {
           const i: number = msg.indexOf(10); // 10 = ascii value of \n
           fromDestination = msg.subarray(0, i).toString();
-          message = msg.subarray(i + 1);
+          message = new Uint8Array(msg.subarray(i + 1));
         } else {
-          message = msg;
+          message = new Uint8Array(msg);
         }
         this.emit('data', message, fromDestination);
       } catch (error) {
@@ -94,17 +104,21 @@ export class I2pSamRaw extends I2pSam {
       this.socketListen.once('error', (error: Error): void => {
         reject(error);
       });
-      this.socketListen.bind(this.config.listen.port, this.config.listen.address, (): void => {
-        this.socketListen.removeAllListeners('error');
-        this.socketListen.on('error', (error: Error): void => {
-          this.emit('error', error);
-        });
-        resolve(this);
-      });
+      this.socketListen.bind(
+        this.config.listen.port,
+        this.config.listen.address,
+        (): void => {
+          this.socketListen.removeAllListeners('error');
+          this.socketListen.on('error', (error: Error): void => {
+            this.emit('error', error);
+          });
+          resolve(this);
+        },
+      );
     });
   }
 
-  close(): void {
+  public override close(): void {
     if (Object.keys(this.socketControlUDP).length) {
       this.socketControlUDP.close();
     }
@@ -114,13 +128,11 @@ export class I2pSamRaw extends I2pSam {
     super.close();
   }
 
-  protected async initSession(type: string = 'RAW'): Promise<I2pSamRaw> {
-    await super.initSession(type);
-    return this;
-  }
-
-  send(destination: string, msg: Buffer): void {
-    if (msg.byteLength < MIN_UDP_MESSAGE_LENGTH || msg.byteLength > MAX_UDP_MESSAGE_LENGTH) {
+  public send(destination: string, msg: Uint8Array): void {
+    if (
+      msg.byteLength < MIN_UDP_MESSAGE_LENGTH ||
+      msg.byteLength > MAX_UDP_MESSAGE_LENGTH
+    ) {
       this.emit('error', new Error('I2pSamRaw.send(): invalid message length'));
       return;
     }
@@ -134,17 +146,22 @@ export class I2pSamRaw extends I2pSam {
     }
   }
 
-  private s(destination: string, msg: Buffer): void {
+  private s(destination: string, msg: Uint8Array): void {
     try {
       this.socketControlUDP.send(
-        Buffer.concat([Buffer.from(`3.0 ${this.config.session.id} ${destination}\n`), msg]),
+        concat([
+          new TextEncoder().encode(
+            `3.0 ${this.config.session.id} ${destination}\n`,
+          ),
+          msg,
+        ]),
         this.config.sam.portUDP,
         this.config.sam.host,
         (error: Error | null): void => {
           if (error) {
             this.emit('error', error);
           }
-        }
+        },
       );
     } catch (e: unknown) {
       const error = e as string;

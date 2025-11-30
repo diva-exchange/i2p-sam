@@ -16,9 +16,18 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { Socket } from 'net';
-import { I2pSam } from './i2p-sam.js';
-import { Configuration } from './config.js';
+import { Socket } from 'node:net';
+import { clearTimeout, setTimeout } from 'node:timers';
+import { I2pSam } from './i2p-sam.ts';
+import type { Configuration } from './config.ts';
+
+export async function createStream(c: Configuration): Promise<I2pSamStream> {
+  return await I2pSamStream.createStream(c);
+}
+
+export async function createForward(c: Configuration): Promise<I2pSamStream> {
+  return await I2pSamStream.createForward(c);
+}
 
 export class I2pSamStream extends I2pSam {
   private socketStream: Socket = {} as Socket;
@@ -27,15 +36,15 @@ export class I2pSamStream extends I2pSam {
   private portForward: number = 0;
   private hasStream: boolean = false;
 
-  static async createStream(c: Configuration): Promise<I2pSamStream> {
+  public static async createStream(c: Configuration): Promise<I2pSamStream> {
     return await I2pSamStream.make(c);
   }
 
-  static async createForward(c: Configuration): Promise<I2pSamStream> {
+  public static async createForward(c: Configuration): Promise<I2pSamStream> {
     return await I2pSamStream.make(c);
   }
 
-  static make(c: Configuration): Promise<I2pSamStream> {
+  public static make(c: Configuration): Promise<I2pSamStream> {
     return new Promise((resolve, reject): void => {
       (async (s: I2pSamStream): Promise<void> => {
         const t: NodeJS.Timeout = setTimeout((): void => {
@@ -57,7 +66,7 @@ export class I2pSamStream extends I2pSam {
     });
   }
 
-  protected async open(): Promise<I2pSamStream> {
+  protected override async open(): Promise<I2pSamStream> {
     await super.open();
 
     this.destination = this.config.stream.destination || '';
@@ -68,7 +77,7 @@ export class I2pSamStream extends I2pSam {
     }
 
     this.socketStream = new Socket();
-    this.socketStream.on('data', (data: Buffer): void => {
+    this.socketStream.on('data', (data: Uint8Array): void => {
       if (this.hasStream) {
         this.emit('data', data);
       } else {
@@ -79,7 +88,10 @@ export class I2pSamStream extends I2pSam {
       this.emit('close');
     });
 
-    this.socketStream.connect({ host: this.config.sam.host, port: this.config.sam.portTCP }, (): void => {
+    this.socketStream.connect({
+      host: this.config.sam.host,
+      port: this.config.sam.portTCP,
+    }, (): void => {
       this.socketStream.removeAllListeners('error');
       this.socketStream.on('error', (error: Error) => {
         this.emit('error', error);
@@ -90,14 +102,14 @@ export class I2pSamStream extends I2pSam {
     return this;
   }
 
-  close(): void {
+  public override close(): void {
     if (Object.keys(this.socketStream).length) {
       this.socketStream.destroy();
     }
     super.close();
   }
 
-  private async connect(): Promise<void> {
+  private connect(): Promise<void> {
     return new Promise((resolve, reject): void => {
       this.internalEventEmitter.removeAllListeners();
       this.internalEventEmitter.once('error', (error: Error) => reject(error));
@@ -108,18 +120,18 @@ export class I2pSamStream extends I2pSam {
 
       let s: string;
       if (this.destination) {
-        s = `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
-      } else {
         s =
-          'STREAM FORWARD ' +
+          `STREAM CONNECT SILENT=false ID=${this.config.session.id} DESTINATION=${this.destination}\n`;
+      } else {
+        s = 'STREAM FORWARD ' +
           `SILENT=${this.config.forward.silent ? 'true' : 'false'} ` +
           `ID=${this.config.session.id} PORT=${this.portForward} HOST=${this.hostForward}\n`;
       }
-      this.stream(Buffer.from(s));
+      this.stream(new TextEncoder().encode(s));
     });
   }
 
-  stream(msg: Buffer): void {
+  public stream(msg: Uint8Array): void {
     this.socketStream.write(msg, (error?: Error | null): void => {
       if (error) {
         this.emit('error', error || new Error('Failed to write to stream'));
