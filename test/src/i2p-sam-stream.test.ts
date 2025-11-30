@@ -18,13 +18,18 @@
 
 import { createServer, type Server, type Socket } from 'node:net';
 import { toB32 } from '../../src/i2p-sam.ts';
-import { createForward, createStream, I2pSamStream } from '../../src/i2p-sam-stream.ts';
+import {
+  createForward,
+  createStream,
+  I2pSamStream,
+} from '../../src/i2p-sam-stream.ts';
 import { expect } from '@std/expect';
 
 const SAM_HOST: string = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(Deno.env.get('SAM_PORT_TCP') || 7656);
 
-const SAM_FORWARD_HOST: string = Deno.env.get('SAM_FORWARD_HOST') || '172.19.74.1';
+const SAM_FORWARD_HOST: string = Deno.env.get('SAM_FORWARD_HOST') ||
+  '172.19.74.1';
 const SAM_FORWARD_PORT: number = Number(Deno.env.get('SAM_PORT_TCP') || 20226);
 
 Deno.test('Stream stream', async (t: Deno.TestContext) => {
@@ -46,10 +51,14 @@ Deno.test('Stream stream', async (t: Deno.TestContext) => {
 
     // send some data to diva.i2p
     await t.step('Streaming data', async () => {
-      stream.stream(new TextEncoder().encode('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
+      stream.stream(
+        new TextEncoder().encode(
+          'GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n',
+        ),
+      );
       while (!messageCounter) {
         // wait / sleep 500ms
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     });
   } catch (error: unknown) {
@@ -119,9 +128,13 @@ Deno.test('Stream forward', async (t: Deno.TestContext) => {
     try {
       // send some data to destination
       while (messageCounter < 5) {
-        i2pSender.stream(new TextEncoder().encode(`GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`));
+        i2pSender.stream(
+          new TextEncoder().encode(
+            `GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`,
+          ),
+        );
         // wait / sleep 1000ms
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (error: unknown) {
       // always fails
@@ -187,7 +200,9 @@ Deno.test('Stream failEmptyDestination', async () => {
     // always false
     expect(false).toEqual(true);
   } catch (error: unknown) {
-    expect((error as Error).toString()).toContain('Stream configuration invalid');
+    expect((error as Error).toString()).toContain(
+      'Stream configuration invalid',
+    );
   } finally {
     Object.keys(stream).length && stream.close();
   }

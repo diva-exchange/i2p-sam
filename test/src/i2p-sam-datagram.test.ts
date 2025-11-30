@@ -17,7 +17,10 @@
  */
 
 import { concat } from '@std/bytes';
-import { type I2pSamDatagram, createDatagram } from '../../src/i2p-sam-datagram.ts';
+import {
+  createDatagram,
+  type I2pSamDatagram,
+} from '../../src/i2p-sam-datagram.ts';
 import { randomFillSync } from 'node:crypto';
 import { expect } from '@std/expect';
 
@@ -37,7 +40,7 @@ Deno.test('Datagram send', async (t: Deno.TestContext) => {
 
   // 1K text data
   const dataToSend: Uint8Array = concat(
-    [new TextEncoder().encode('\n'), randomFillSync(new Uint8Array(1023))]
+    [new TextEncoder().encode('\n'), randomFillSync(new Uint8Array(1023))],
   );
 
   let i2pSender: I2pSamDatagram = {} as I2pSamDatagram;
@@ -87,15 +90,16 @@ Deno.test('Datagram send', async (t: Deno.TestContext) => {
 
       while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
         // wait / sleep 1000ms
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
       clearInterval(intervalSender);
       clearInterval(intervalRecipient);
     });
 
-    const pA: number = Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10;
+    const pA: number =
+      Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10;
     await t.step(`Summary, sent ${sentMsg} messages; ${pA}% arrived`, () => {
-      expect(sentMsg, ).toBeGreaterThan(0);
+      expect(sentMsg).toBeGreaterThan(0);
       expect(pA).toBeGreaterThan(0);
       expect(messageCounterA).not.toEqual(0);
       expect(messageCounterB).not.toEqual(0);
@@ -109,13 +113,17 @@ Deno.test('Datagram send', async (t: Deno.TestContext) => {
   }
 });
 
-
 Deno.test('Datagram failTimeout', async () => {
   let datagram: I2pSamDatagram = {} as I2pSamDatagram;
   // timeout error
   try {
     datagram = await createDatagram({
-      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP, timeout: 1 },
+      sam: {
+        host: SAM_HOST,
+        portTCP: SAM_PORT_TCP,
+        portUDP: SAM_PORT_UDP,
+        timeout: 1,
+      },
     });
     expect(false).toBe(true);
   } catch (error: any) {
@@ -140,7 +148,7 @@ Deno.test('Datagram failKeys', async () => {
     // always false
     expect(false).toEqual(true);
   } catch (error: unknown) {
-    expect((error as Error).toString()).toContain('SESSION failed')
+    expect((error as Error).toString()).toContain('SESSION failed');
     expect((error as Error).toString()).toContain('RESULT=INVALID_KEY');
   } finally {
     Object.keys(datagram).length && datagram.close();

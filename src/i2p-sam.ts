@@ -39,10 +39,15 @@ const VALUE_OK: string = 'OK';
 export function toB32(base64Destination: string): string {
   return I2pSam.toB32(base64Destination);
 }
-export async function createLocalDestination(c: Configuration): Promise<{ address: string; public: string; private: string }> {
+export async function createLocalDestination(
+  c: Configuration,
+): Promise<{ address: string; public: string; private: string }> {
   return await I2pSam.createLocalDestination(c);
 }
-export async function lookup(c: Configuration, address: string): Promise<string> {
+export async function lookup(
+  c: Configuration,
+  address: string,
+): Promise<string> {
   return await I2pSam.lookup(c, address);
 }
 
@@ -99,7 +104,7 @@ export class I2pSam extends EventEmitter {
       }
       return this;
     } catch (e: unknown) {
-      return Promise.reject((e as Error));
+      return Promise.reject(e as Error);
     }
   }
 
@@ -313,7 +318,10 @@ export class I2pSam extends EventEmitter {
     };
   }
 
-  public static async lookup(c: Configuration, address: string): Promise<string> {
+  public static async lookup(
+    c: Configuration,
+    address: string,
+  ): Promise<string> {
     const sam: I2pSam = new I2pSam(c);
     let s: string = '';
     try {

@@ -25,9 +25,12 @@ import { randomFillSync } from 'node:crypto';
 const SAM_HOST: string = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(Deno.env.get('SAM_PORT_TCP')) || 7656;
 const SAM_PORT_UDP: number = Number(Deno.env.get('SAM_PORT_UDP')) || 7655;
-const SAM_LISTEN_ADDRESS: string = Deno.env.get('SAM_LISTEN_ADDRESS') || '0.0.0.0';
-const SAM_LISTEN_PORT: number = Number(Deno.env.get('SAM_LISTEN_PORT')) || 20224;
-const SAM_LISTEN_FORWARD: string = Deno.env.get('SAM_LISTEN_FORWARD') || '172.19.74.1';
+const SAM_LISTEN_ADDRESS: string = Deno.env.get('SAM_LISTEN_ADDRESS') ||
+  '0.0.0.0';
+const SAM_LISTEN_PORT: number = Number(Deno.env.get('SAM_LISTEN_PORT')) ||
+  20224;
+const SAM_LISTEN_FORWARD: string = Deno.env.get('SAM_LISTEN_FORWARD') ||
+  '172.19.74.1';
 
 Deno.test('Raw send', async (t: Deno.TestContext) => {
   let messageCounterA: number = 0;
@@ -45,7 +48,10 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
   try {
     await t.step('Creating Sender', async () => {
       i2pSender = await createRaw({
-        session: { options: 'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false' },
+        session: {
+          options:
+            'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false',
+        },
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
           address: SAM_LISTEN_ADDRESS,
@@ -61,7 +67,10 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
 
     await t.step('Creating Recipient', async () => {
       i2pRecipient = await createRaw({
-        session: { options: 'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false' },
+        session: {
+          options:
+            'inbound.lengthVariance=2 outbound.lengthVariance=2 shouldBundleReplyInfo=false',
+        },
         sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, portUDP: SAM_PORT_UDP },
         listen: {
           address: SAM_LISTEN_ADDRESS,
@@ -91,14 +100,15 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
       }, 50);
 
       while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
       clearInterval(intervalSender);
       clearInterval(intervalRecipient);
     });
-    const pA: number = Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10;
+    const pA: number =
+      Math.round(((messageCounterA + messageCounterB) / sentMsg) * 1000) / 10;
     await t.step(`Summary, sent ${sentMsg} messages; ${pA}% arrived`, () => {
-      expect(sentMsg, ).toBeGreaterThan(0);
+      expect(sentMsg).toBeGreaterThan(0);
       expect(pA).toBeGreaterThan(0);
       expect(messageCounterA).not.toEqual(0);
       expect(messageCounterB).not.toEqual(0);
@@ -113,7 +123,9 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
 });
 
 Deno.test('Raw failEmptyMessage', async () => {
-  const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
+  const config: Configuration = {
+    sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+  };
   const dest: string = await lookup(config, 'diva.i2p');
   let raw: I2pSamRaw = {} as I2pSamRaw;
   try {
@@ -127,7 +139,9 @@ Deno.test('Raw failEmptyMessage', async () => {
 });
 
 Deno.test('Raw failTooLargeMessage', async () => {
-  const config: Configuration = { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } };
+  const config: Configuration = {
+    sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+  };
   const dest: string = await lookup(config, 'diva.i2p');
   let raw: I2pSamRaw = {} as I2pSamRaw;
   try {
