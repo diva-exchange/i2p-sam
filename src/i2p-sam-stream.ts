@@ -84,9 +84,6 @@ export class I2pSamStream extends I2pSam {
         this.parseReply(data);
       }
     });
-    this.socketStream.on('close', (): void => {
-      this.emit('close');
-    });
 
     this.socketStream.connect({
       host: this.config.sam.host,
