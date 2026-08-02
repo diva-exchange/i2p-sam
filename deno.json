@@ -7,8 +7,8 @@
   "exports": "./src/mod.ts",
   "imports": {
     "@std/bytes": "jsr:@std/bytes@^1.0.6",
-    "@std/encoding": "jsr:@std/encoding@^1.0.10",
-    "@std/expect": "jsr:@std/expect@^1.0.19",
+    "@std/encoding": "jsr:@std/encoding@^1.0.11",
+    "@std/expect": "jsr:@std/expect@^1.0.20",
     "nanoid": "npm:nanoid@5.1.6",
     "rfc4648": "npm:rfc4648@1.5.4"
   },

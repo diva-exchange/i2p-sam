@@ -3,11 +3,11 @@
   "specifiers": {
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
-    "jsr:@std/encoding@^1.0.10": "1.0.10",
-    "jsr:@std/expect@^1.0.19": "1.0.19",
-    "jsr:@std/internal@^1.0.12": "1.0.13",
-    "jsr:@std/internal@^1.0.13": "1.0.13",
-    "jsr:@std/path@^1.1.4": "1.1.4",
+    "jsr:@std/encoding@^1.0.11": "1.0.11",
+    "jsr:@std/expect@^1.0.20": "1.0.20",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
+    "jsr:@std/internal@^1.0.14": "1.0.14",
+    "jsr:@std/path@^1.1.6": "1.1.6",
     "npm:@types/node@*": "24.2.0",
     "npm:nanoid@5.1.6": "5.1.6",
     "npm:rfc4648@1.5.4": "1.5.4"
@@ -22,24 +22,24 @@
     "@std/bytes@1.0.6": {
       "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
     },
-    "@std/encoding@1.0.10": {
-      "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
+    "@std/encoding@1.0.11": {
+      "integrity": "e7cef2f0b3153bccc17431e7c864a1de03a4b6d9647389c43e08aaa775d37385"
     },
-    "@std/expect@1.0.19": {
-      "integrity": "25271785688c7ff902fa54875d6aa4001f552c5578f7f0fefb5b5aac1fc2ed8a",
+    "@std/expect@1.0.20": {
+      "integrity": "ffc4f3c33f732417e3e9acf3d995818c89984313c37d933b9ebbb4571d2887e9",
       "dependencies": [
         "jsr:@std/assert",
-        "jsr:@std/internal@^1.0.13",
+        "jsr:@std/internal@^1.0.14",
         "jsr:@std/path"
       ]
     },
-    "@std/internal@1.0.13": {
-      "integrity": "2f9546691d4ac2d32859c82dff284aaeac980ddeca38430d07941e7e288725c0"
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
     },
-    "@std/path@1.1.4": {
-      "integrity": "1d2d43f39efb1b42f0b1882a25486647cb851481862dc7313390b2bb044314b5",
+    "@std/path@1.1.6": {
+      "integrity": "c68485c2a4dfbb5ae3cc74fae4e8c4e5d874cf8a8ed12927917235c758b46cbe",
       "dependencies": [
-        "jsr:@std/internal@^1.0.12"
+        "jsr:@std/internal@^1.0.14"
       ]
     }
   },
@@ -64,8 +64,8 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/bytes@^1.0.6",
-      "jsr:@std/encoding@^1.0.10",
-      "jsr:@std/expect@^1.0.19",
+      "jsr:@std/encoding@^1.0.11",
+      "jsr:@std/expect@^1.0.20",
       "npm:nanoid@5.1.6",
       "npm:rfc4648@1.5.4"
     ]
