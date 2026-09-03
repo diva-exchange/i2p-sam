@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import {
   I2pSamStream,
 } from '../../src/i2p-sam-stream.ts';
 import { expect } from '@std/expect';
+import sodium, { SecureBuffer } from 'sodium-native';
 
 const SAM_HOST: string = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(Deno.env.get('SAM_PORT_TCP') || 7656);
@@ -34,7 +35,7 @@ const SAM_FORWARD_PORT: number = Number(Deno.env.get('SAM_PORT_TCP') || 20226);
 
 Deno.test('Stream stream', async (t: Deno.TestContext) => {
   let messageCounter: number = 0;
-  let stream: I2pSamStream = {} as I2pSamStream;
+  let stream: I2pSamStream | undefined;
 
   try {
     await t.step('Creating Stream', async () => {
@@ -51,105 +52,121 @@ Deno.test('Stream stream', async (t: Deno.TestContext) => {
 
     // send some data to diva.i2p
     await t.step('Streaming data', async () => {
-      stream.stream(
+      stream!.stream(
         new TextEncoder().encode(
           'GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n',
         ),
       );
-      while (!messageCounter) {
+
+      let waitCycles = 0;
+      while (!messageCounter && waitCycles < 60) {
         // wait / sleep 500ms
         await new Promise((resolve) => setTimeout(resolve, 500));
+        waitCycles++;
+      }
+
+      if (waitCycles >= 60) {
+        throw new Error('Test timed out. Target did not respond.');
       }
     });
   } catch (error: unknown) {
     // always fails
     expect(false, `Test Error ${(error as Error).toString()}`).toEqual(true);
+  } finally {
+    if (stream) stream.close();
   }
-
-  Object.keys(stream).length && stream.close();
   expect(messageCounter).not.toEqual(0);
 });
 
 Deno.test('Stream forward', async (t: Deno.TestContext) => {
   let messageCounter: number = 0;
+  let serverForward: Server | undefined;
+  let i2pForward: I2pSamStream | undefined;
+  let i2pSender: I2pSamStream | undefined;
 
-  await t.step('Creating listener', () => {
-    const serverForward: Server = createServer((c: Socket): void => {
-      c.on('end', (): void => {
-        serverForward.close();
+  try {
+    await t.step('Creating listener', () => {
+      serverForward = createServer((c: Socket): void => {
+        c.on('error', () => {});
+        c.on('data', (): void => {
+          c.write(`hello ${messageCounter}\n`);
+        });
       });
-      c.on('data', (): void => {
-        c.write(`hello ${messageCounter}\n`);
-      });
+      serverForward.listen(SAM_FORWARD_PORT);
     });
-    serverForward.listen(SAM_FORWARD_PORT);
-  });
 
-  let i2pForward: I2pSamStream = {} as I2pSamStream;
-  let i2pSender: I2pSamStream = {} as I2pSamStream;
-  await t.step('Creating Forward', async () => {
-    try {
-      i2pForward = await createForward({
-        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
-        forward: {
-          host: SAM_FORWARD_HOST,
-          port: SAM_FORWARD_PORT,
-          silent: true,
-        },
-      });
-    } catch (error: unknown) {
-      // always fails
-      expect(false, `Test Error ${(error as Error).toString()}`).toEqual(true);
-    }
-  });
-
-  expect(Object.keys(i2pForward).length).toBeGreaterThan(0);
-
-  const destination: string = i2pForward.getPublicKey();
-
-  await t.step('Creating Stream to ' + destination, async () => {
-    try {
-      i2pSender = await createStream({
-        sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
-        stream: {
-          destination: destination,
-        },
-      });
-      i2pSender.on('data', (): void => {
-        messageCounter++;
-      });
-    } catch (error: unknown) {
-      // always fails
-      expect(false, `Test Error ${(error as Error).toString()}`).toEqual(true);
-    }
-  });
-
-  await t.step('Streaming data', async () => {
-    try {
-      // send some data to destination
-      while (messageCounter < 5) {
-        i2pSender.stream(
-          new TextEncoder().encode(
-            `GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`,
-          ),
+    await t.step('Creating Forward', async () => {
+      try {
+        i2pForward = await createForward({
+          sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+          forward: {
+            host: SAM_FORWARD_HOST,
+            port: SAM_FORWARD_PORT,
+            silent: true,
+          },
+        });
+      } catch (error: unknown) {
+        expect(false, `Test Error ${(error as Error).toString()}`).toEqual(
+          true,
         );
-        // wait / sleep 1000ms
-        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-    } catch (error: unknown) {
-      // always fails
-      expect(false, `Test Error ${(error as Error).toString()}`).toEqual(true);
-    }
-  });
+    });
 
-  Object.keys(i2pForward).length && i2pForward.close();
-  Object.keys(i2pSender).length && i2pSender.close();
+    expect(i2pForward).toBeDefined();
+    const destination: string = i2pForward!.getPublicKey();
+
+    await t.step('Creating Stream to ' + destination, async () => {
+      try {
+        i2pSender = await createStream({
+          sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+          stream: {
+            destination: destination,
+          },
+        });
+        i2pSender.on('data', (): void => {
+          messageCounter++;
+        });
+      } catch (error: unknown) {
+        expect(false, `Test Error ${(error as Error).toString()}`).toEqual(
+          true,
+        );
+      }
+    });
+
+    await t.step('Streaming data', async () => {
+      try {
+        let waitCycles = 0;
+        // send some data to destination
+        while (messageCounter < 5 && waitCycles < 30) {
+          i2pSender!.stream(
+            new TextEncoder().encode(
+              `GET / HTTP/1.1\r\nHost: ${toB32(destination)}.b32.i2p\r\n\r\n`,
+            ),
+          );
+          // wait / sleep 1000ms
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          waitCycles++;
+        }
+
+        if (waitCycles >= 30) {
+          throw new Error('Test timed out. Packet loss too high.');
+        }
+      } catch (error: unknown) {
+        expect(false, `Test Error ${(error as Error).toString()}`).toEqual(
+          true,
+        );
+      }
+    });
+  } finally {
+    if (i2pForward) i2pForward.close();
+    if (i2pSender) i2pSender.close();
+    if (serverForward) serverForward.close();
+  }
   expect(messageCounter).not.toEqual(0);
 });
 
 Deno.test('Stream failTimeout', async () => {
-  let stream: I2pSamStream = {} as I2pSamStream;
-  // timeout error
+  let stream: I2pSamStream | undefined;
   try {
     stream = await createStream({
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 2 },
@@ -162,13 +179,12 @@ Deno.test('Stream failTimeout', async () => {
   } catch (error: any) {
     expect(error.toString()).toContain('timeout');
   } finally {
-    Object.keys(stream).length && stream.close();
+    if (stream) stream.close();
   }
 });
 
 Deno.test('Stream failNotFound', async () => {
-  let stream: I2pSamStream = {} as I2pSamStream;
-  // connection error
+  let stream: I2pSamStream | undefined;
   try {
     stream = await createStream({
       sam: {
@@ -182,13 +198,12 @@ Deno.test('Stream failNotFound', async () => {
   } catch (error: unknown) {
     expect((error as Error).toString()).toContain('ENOTFOUND');
   } finally {
-    Object.keys(stream).length && stream.close();
+    if (stream) stream.close();
   }
 });
 
 Deno.test('Stream failEmptyDestination', async () => {
-  let stream: I2pSamStream = {} as I2pSamStream;
-  // empty destination
+  let stream: I2pSamStream | undefined;
   try {
     stream = await createStream({
       sam: {
@@ -204,29 +219,32 @@ Deno.test('Stream failEmptyDestination', async () => {
       'Stream configuration invalid',
     );
   } finally {
-    Object.keys(stream).length && stream.close();
+    if (stream) stream.close();
   }
 });
 
 Deno.test('Stream failKeys', async () => {
-  // public key / private key issues
-  let stream: I2pSamStream = {} as I2pSamStream;
+  const dummyKey: SecureBuffer = sodium.sodium_malloc(2);
+  sodium.sodium_mlock(dummyKey);
+
+  let stream: I2pSamStream | undefined;
   try {
     stream = await createStream({
       sam: {
         host: SAM_HOST,
         portTCP: SAM_PORT_TCP,
         publicKey: '-',
-        privateKey: '--',
+        privateKey: dummyKey,
       },
       stream: { destination: 'diva.i2p' },
     });
-    // always false
     expect(false).toEqual(true);
   } catch (error: unknown) {
     expect((error as Error).toString()).toContain('SESSION failed');
     expect((error as Error).toString()).toContain('RESULT=INVALID_KEY');
   } finally {
-    Object.keys(stream).length && stream.close();
+    if (stream) stream.close();
+    sodium.sodium_munlock(dummyKey);
+    sodium.sodium_memzero(dummyKey);
   }
 });

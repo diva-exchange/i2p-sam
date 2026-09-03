@@ -3,18 +3,18 @@
   "description": "I2P SAM: peer-to-peer communication between applications over I2P",
   "author": "DIVA.EXCHANGE Association <contact@diva.exchange> (https://diva.exchange)",
   "license": "Apache-2.0",
-  "version": "6.1.2",
+  "version": "7.0.0",
   "exports": "./src/mod.ts",
   "imports": {
     "@std/bytes": "jsr:@std/bytes@^1.0.6",
     "@std/encoding": "jsr:@std/encoding@^1.0.11",
     "@std/expect": "jsr:@std/expect@^1.0.20",
-    "nanoid": "npm:nanoid@5.1.6",
-    "rfc4648": "npm:rfc4648@1.5.4"
+    "@types/sodium-native": "npm:@types/sodium-native@^2.3.9",
+    "sodium-native": "npm:sodium-native@5.1.0"
   },
   "tasks": {
     "lint": "deno lint",
-    "test": "deno test --allow-env --allow-net --coverage=./test/coverage ./test/src/"
+    "test": "deno test --allow-env --allow-net --allow-read --allow-sys --allow-ffi --coverage=./test/coverage ./test/src/"
   },
   "lint": {
     "include": ["src/"],

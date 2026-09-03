@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,10 @@ export class I2pSamStream extends I2pSam {
   }
 
   public override close(): void {
-    if (Object.keys(this.socketStream).length) {
+    if (
+      this.socketStream && typeof this.socketStream.destroy === 'function' &&
+      !this.socketStream.destroyed
+    ) {
       this.socketStream.destroy();
     }
     super.close();

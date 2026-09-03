@@ -20,6 +20,7 @@ import { type Configuration } from '../../src/config.ts';
 import { createLocalDestination, lookup, toB32 } from '../../src/i2p-sam.ts';
 import { createRaw, type I2pSamRaw } from '../../src/i2p-sam-raw.ts';
 import { expect } from '@std/expect';
+import sodium, { SecureBuffer } from 'sodium-native';
 
 const SAM_HOST: string = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(Deno.env.get('SAM_PORT_TCP') || 7656);
@@ -38,10 +39,14 @@ Deno.test('createLocalDestination', async () => {
     sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
   });
 
-  //@FIXME
   expect(obj.address).not.toEqual('');
   expect(obj.public).not.toEqual('');
-  expect(obj.private).not.toEqual('');
+  expect(obj.private).not.toBeNull();
+
+  if (obj.private) {
+    sodium.sodium_munlock(obj.private);
+    sodium.sodium_memzero(obj.private);
+  }
 });
 
 Deno.test('lookup', async () => {
@@ -67,7 +72,8 @@ Deno.test('keys', async () => {
     sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
   });
 
-  const pair: { public: string; private: string } = sam.getKeyPair();
+  const pair: { public: string; private: SecureBuffer | null } = sam
+    .getKeyPair();
   expect(pair.public).toEqual(sam.getPublicKey());
   expect(pair.private).toEqual(sam.getPrivateKey());
   expect(sam.getB32Address()).not.toEqual('');
@@ -109,21 +115,25 @@ Deno.test('failVersion', async () => {
 });
 
 Deno.test('failKeys', async () => {
-  // public key / private key issues
+  const dummyKey: SecureBuffer = sodium.sodium_malloc(2);
+  sodium.sodium_mlock(dummyKey);
+
   try {
     await createRaw({
       sam: {
         host: SAM_HOST,
         portTCP: SAM_PORT_TCP,
         publicKey: '-',
-        privateKey: '--',
+        privateKey: dummyKey,
       },
     });
-    // always fails
     expect(false).toEqual(true);
   } catch (error: unknown) {
     expect((error as Error).message).toContain('SESSION failed');
     expect((error as Error).message).toContain('RESULT=INVALID_KEY');
+  } finally {
+    sodium.sodium_munlock(dummyKey);
+    sodium.sodium_memzero(dummyKey);
   }
 });
 
@@ -140,5 +150,40 @@ Deno.test('failConnect', async () => {
     expect(false).toEqual(true);
   } catch (error: unknown) {
     expect((error as Error).message).toContain('ENOTFOUND');
+  }
+});
+
+Deno.test('failNamingReply', async () => {
+  try {
+    await lookup(
+      { sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP } },
+      'this-domain-does-not-exist-12345.i2p',
+    );
+    expect(false).toEqual(true);
+  } catch (error: unknown) {
+    expect((error as Error).message).toContain('NAMING failed');
+  }
+});
+
+Deno.test('failDestinationParsing', async () => {
+  const dummyKey: SecureBuffer = sodium.sodium_malloc(2);
+  sodium.sodium_mlock(dummyKey);
+
+  try {
+    await createRaw({
+      sam: {
+        host: SAM_HOST,
+        portTCP: SAM_PORT_TCP,
+        publicKey: '',
+        privateKey: dummyKey,
+        timeout: 1,
+      }
+    });
+    expect(false).toEqual(true);
+  } catch (error: unknown) {
+    expect((error as Error).message).toBeDefined();
+  } finally {
+    sodium.sodium_munlock(dummyKey);
+    sodium.sodium_memzero(dummyKey);
   }
 });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@
 import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { Socket } from 'node:net';
-import { base32 } from 'rfc4648';
 import { Config, type Configuration } from './config.ts';
+import sodium, { SecureBuffer } from 'sodium-native';
+import { encodeBase32 } from '@std/encoding/base32';
+import { indexOfNeedle } from '@std/bytes';
 
 const REPLY_HELLO: string = 'HELLOREPLY';
 const REPLY_DEST: string = 'DESTREPLY';
@@ -41,7 +43,7 @@ export function toB32(base64Destination: string): string {
 }
 export async function createLocalDestination(
   c: Configuration,
-): Promise<{ address: string; public: string; private: string }> {
+): Promise<{ address: string; public: string; private: SecureBuffer | null }> {
   return await I2pSam.createLocalDestination(c);
 }
 export async function lookup(
@@ -58,7 +60,7 @@ export class I2pSam extends EventEmitter {
 
   // identity
   private publicKey: string;
-  private privateKey: string;
+  private privateKey: SecureBuffer | null;
 
   protected internalEventEmitter: EventEmitter;
 
@@ -70,7 +72,7 @@ export class I2pSam extends EventEmitter {
       ? this.config.sam.timeout
       : 300;
     this.publicKey = this.config.sam.publicKey || '';
-    this.privateKey = this.config.sam.privateKey || '';
+    this.privateKey = this.config.sam.privateKey || null;
     this.internalEventEmitter = new EventEmitter();
   }
 
@@ -109,8 +111,17 @@ export class I2pSam extends EventEmitter {
   }
 
   protected close(): void {
+    this.publicKey = '';
+    if (this.privateKey) {
+      sodium.sodium_munlock(this.privateKey);
+      sodium.sodium_memzero(this.privateKey);
+      this.privateKey = null;
+    }
     this.internalEventEmitter.removeAllListeners();
-    if (Object.keys(this.socketControl).length) {
+    if (
+      this.socketControl && typeof this.socketControl.destroy === 'function' &&
+      !this.socketControl.destroyed
+    ) {
       this.socketControl.destroy();
     }
   }
@@ -137,39 +148,66 @@ export class I2pSam extends EventEmitter {
 
   protected initSession(type: string): Promise<I2pSam> {
     return new Promise((resolve, reject): void => {
-      let s: string =
-        `SESSION CREATE ID=${this.config.session.id} DESTINATION=${this.privateKey} `;
-      switch (type) {
-        case 'STREAM':
-          s += 'STYLE=STREAM';
-          break;
-        case 'DATAGRAM':
-        case 'RAW':
-          s +=
-            `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}`;
-          break;
+      const prefixStr =
+        `SESSION CREATE ID=${this.config.session.id} DESTINATION=`;
+      const prefixBuf = new TextEncoder().encode(prefixStr);
+
+      let suffixStr = ' ';
+      if (type === 'STREAM') suffixStr += 'STYLE=STREAM';
+      else if (type === 'DATAGRAM' || type === 'RAW') {
+        suffixStr +=
+          `STYLE=${type} PORT=${this.config.listen.portForward} HOST=${this.config.listen.hostForward}`;
       }
+      suffixStr +=
+        (this.config.session.options ? ' ' + this.config.session.options : '') +
+        '\n';
+      const suffixBuf: Uint8Array = new TextEncoder().encode(suffixStr);
+
+      const len: number = prefixBuf.length + (this.privateKey?.length || 0) +
+        suffixBuf.length;
+      const outBuf: SecureBuffer = sodium.sodium_malloc(len);
+      sodium.sodium_mlock(outBuf);
+
+      outBuf.set(prefixBuf, 0);
+      if (this.privateKey) outBuf.set(this.privateKey, prefixBuf.length);
+      outBuf.set(suffixBuf, prefixBuf.length + (this.privateKey?.length || 0));
 
       this.internalEventEmitter.removeAllListeners();
       this.internalEventEmitter.once('error', reject);
       this.internalEventEmitter.once('session', resolve);
 
-      s +=
-        (this.config.session.options ? ' ' + this.config.session.options : '') +
-        '\n';
-      this.socketControl.write(s, (error: Error | null | undefined): void => {
-        if (error) {
-          reject(error);
-        }
-      });
+      this.socketControl.write(
+        outBuf,
+        (error: Error | null | undefined): void => {
+          sodium.sodium_munlock(outBuf);
+          sodium.sodium_memzero(outBuf);
+          if (error) reject(error);
+        },
+      );
     });
   }
 
   protected parseReply(data: Uint8Array): void {
-    const sData: string = data.toString().trim();
+    const privTag = new TextEncoder().encode(KEY_PRIV + '=');
+    const idx = indexOfNeedle(data, privTag);
+    let extractedPriv: SecureBuffer | null = null;
+
+    if (idx !== -1) {
+      const start = idx + privTag.length;
+      let end = data.indexOf(32, start); // Space
+      if (end === -1) end = data.indexOf(10, start); // Newline
+      if (end === -1) end = data.length;
+
+      const len = end - start;
+      extractedPriv = sodium.sodium_malloc(len);
+      sodium.sodium_mlock(extractedPriv);
+      extractedPriv.set(data.subarray(start, end));
+      sodium.sodium_memzero(data.subarray(start, end) as SecureBuffer);
+    }
+
+    const sData: string = new TextDecoder().decode(data).trim();
     const [c, s] = sData.split(' ');
     const oKeyValue = I2pSam.parseReplyKeyValue(sData);
-
     // command reply handling
     switch (c + s) {
       case REPLY_HELLO:
@@ -182,13 +220,22 @@ export class I2pSam extends EventEmitter {
         return;
       case REPLY_DEST:
         this.publicKey = oKeyValue[KEY_PUB] || '';
-        this.privateKey = oKeyValue[KEY_PRIV] || '';
-        !this.publicKey || !this.privateKey
-          ? this.internalEventEmitter.emit(
+        if (extractedPriv) {
+          if (this.privateKey) {
+            sodium.sodium_munlock(this.privateKey);
+            sodium.sodium_memzero(this.privateKey);
+          }
+          this.privateKey = extractedPriv;
+        }
+
+        if (!this.publicKey || !this.privateKey) {
+          this.internalEventEmitter.emit(
             'error',
             new Error('DEST failed: ' + sData),
-          )
-          : this.internalEventEmitter.emit('destination');
+          );
+        } else {
+          this.internalEventEmitter.emit('destination');
+        }
         return;
       case REPLY_SESSION:
         oKeyValue[KEY_RESULT] !== VALUE_OK ||
@@ -232,7 +279,11 @@ export class I2pSam extends EventEmitter {
 
   private generateDestination(): Promise<void> {
     this.publicKey = '';
-    this.privateKey = '';
+    if (this.privateKey) {
+      sodium.sodium_munlock(this.privateKey);
+      sodium.sodium_memzero(this.privateKey);
+      this.privateKey = null;
+    }
     return new Promise((resolve, reject): void => {
       this.internalEventEmitter.removeAllListeners();
       this.internalEventEmitter.once('error', (error: Error): void => {
@@ -282,11 +333,11 @@ export class I2pSam extends EventEmitter {
     return this.publicKey;
   }
 
-  public getPrivateKey(): string {
+  public getPrivateKey(): SecureBuffer | null {
     return this.privateKey;
   }
 
-  public getKeyPair(): { public: string; private: string } {
+  public getKeyPair(): { public: string; private: SecureBuffer | null } {
     return {
       public: this.getPublicKey(),
       private: this.getPrivateKey(),
@@ -296,25 +347,43 @@ export class I2pSam extends EventEmitter {
   public static toB32(base64Destination: string): string {
     const i: string = base64Destination.replace(/-/g, '+').replace(/~/g, '/');
     const s: Uint8Array = new Uint8Array(atob(i).length);
+    // setFromBase64 ist ein neueres Deno-Feature, alternativ decodeBase64 nutzen
     s.setFromBase64(i);
-    return base32.stringify(crypto.createHash('sha256').update(s).digest(), {
-      pad: false,
-    }).toLowerCase();
+
+    const hash = crypto.createHash('sha256').update(s).digest();
+    // base32 aus std/encoding erzeugt Großbuchstaben mit Padding (=), I2P braucht kleine ohne =
+    return encodeBase32(hash).toLowerCase().replace(/=+$/, '');
   }
 
   public static async createLocalDestination(
     c: Configuration,
-  ): Promise<{ address: string; public: string; private: string }> {
+  ): Promise<
+    { address: string; public: string; private: SecureBuffer | null }
+  > {
     const sam: I2pSam = new I2pSam(c);
+    let privCopy: SecureBuffer | null = null;
+    let pubCopy: string = '';
+    let addrCopy: string = '';
+
     try {
       await sam.open();
+      pubCopy = sam.getPublicKey();
+      addrCopy = sam.getB32Address();
+
+      const priv = sam.getPrivateKey();
+      if (priv) {
+        privCopy = sodium.sodium_malloc(priv.length);
+        sodium.sodium_mlock(privCopy);
+        privCopy.set(priv);
+      }
     } finally {
       sam.close();
     }
+
     return {
-      address: sam.getB32Address(),
-      public: sam.getPublicKey(),
-      private: sam.getPrivateKey(),
+      address: addrCopy,
+      public: pubCopy,
+      private: privCopy,
     };
   }
 

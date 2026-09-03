@@ -10,7 +10,15 @@ censorship-resistant and end-to-end-encrypted communication. I2P is a fully
 distributed, "privacy-by-design" peer-to-peer network.
 
 To get I2P up and running, take a look at the project:
-https://github.com/diva-exchange/i2p
+[https://github.com/diva-exchange/i2p](https://github.com/diva-exchange/i2p)
+
+## Security & Memory Safety
+
+**Memory Safe Cryptography:** Private keys are explicitly protected from V8
+garbage collection leaks and OS swapping by utilizing `sodium-native`'s
+`SecureBuffer` (`mlock` and `memzero`). Secret keys are pinned in RAM and
+securely destroyed upon closing the connection, ensuring operational security
+for P2P nodes.
 
 ## Use Cases
 
@@ -18,8 +26,8 @@ I2P is an instantly available peer-to-peer network which can be used for things
 like:
 
 - chat, social media and alike - all private and secure
-- distributed databases, aka blockchains (see https://testnet.diva.exchange as
-  an example)
+- distributed databases, aka blockchains (see
+  [https://testnet.diva.exchange](https://testnet.diva.exchange) as an example)
 - gaming, file sharing and ... whatever else you come up with
 
 I2P is fully distributed, well researched and gets further developed by a
@@ -38,14 +46,13 @@ hassle-free.
 
 Send an HTTP GET request to diva.i2p and output the response:
 
-```
+```typescript
 import { createStream } from '@i2p/sam';
 
 (async () => {
-
   const s = await createStream({
     stream: {
-      destination: 'diva.i2p'
+      destination: 'diva.i2p',
     },
     sam: {
       // your local I2P SAM host,
@@ -53,23 +60,27 @@ import { createStream } from '@i2p/sam';
       // docker container (see "Unit Tests" below)
       host: '127.0.0.1',
       // your local I2P SAM port, this is the default
-      portTCP: 7656
+      portTCP: 7656,
     },
   });
-  s.on('data', (data: Buffer) => {
-    console.log('Incoming Data: ' + data.toString());
-  });
-  
-  s.stream(Buffer.from('GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n'));
 
+  s.on('data', (data: Uint8Array) => {
+    console.log('Incoming Data: ' + new TextDecoder().decode(data));
+  });
+
+  s.stream(
+    new TextEncoder().encode(
+      'GET /hosts.txt HTTP/1.1\r\nHost: diva.i2p\r\n\r\n',
+    ),
+  );
 })();
 ```
 
 Forward incoming streaming data to a local socket server:
 
-```
-import { createStream, createForward, I2pSamStream } from '@i2p/sam';
-import net from 'net';
+```typescript
+import { createForward, createStream, I2pSamStream } from '@i2p/sam';
+import net from 'node:net';
 
 (async () => {
   const serverForward = net.createServer((c) => {
@@ -77,39 +88,41 @@ import net from 'net';
     c.on('end', () => {
       console.debug('client disconnected');
     });
-    c.on('data', (data: Buffer) => {
-      console.debug(data.toString());
-      c.write(`Hello Client!\n`);
+    c.on('data', (data: Uint8Array) => {
+      console.debug(new TextDecoder().decode(data));
+      c.write(new TextEncoder().encode('Hello Client!\n'));
     });
   });
   serverForward.listen(20222, '127.0.0.2');
 
   const samForward: I2pSamStream = await createForward({
-    sam: { 
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
+    sam: {
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
     },
     forward: {
-      host: '127.0.0.2',  // your local listener, see above
-      port: 20222,        // your local listener, see above
+      host: '127.0.0.2', // your local listener, see above
+      port: 20222, // your local listener, see above
     },
   });
 
   const samClient: I2pSamStream = await createStream({
-    sam: { 
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
+    sam: {
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
     },
     stream: {
-      destination: samForward.getPublicKey()
+      destination: samForward.getPublicKey(),
     },
   });
+
   // event handler
-  samClient.on('data', (data: Buffer) => {
-    console.debug(data.toString());
+  samClient.on('data', (data: Uint8Array) => {
+    console.debug(new TextDecoder().decode(data));
   });
+
   // send some data to destination
-  samClient.stream(Buffer.from(`Hi Server!\n`));
+  samClient.stream(new TextEncoder().encode('Hi Server!\n'));
 })();
 ```
 
@@ -121,40 +134,41 @@ defined as the public key of a node in the I2P network.
 Send reply-able UDP messages from peer **A** to peer **B** through the I2P
 network:
 
-```
+```typescript
 import { createDatagram, toB32 } from '@i2p/sam';
 
 (async () => {
   // instantiate Peer A
   const peerA = await createDatagram({
     sam: {
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
-    }
-  }); 
-  
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
+    },
+  });
+
   // instantiate Peer B
   const peerB = await createDatagram({
     sam: {
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
     },
-    listen: { 
-      address: '127.0.0.1',  // udp listener
-      port: 20202            // udp listener
-    }
-  }).on('data', (data: Buffer, from) => {
-    console.debug(`Incoming Data from ${toB32(from)}: ${data.toString()}`);
+    listen: {
+      address: '127.0.0.1', // udp listener
+      port: 20202, // udp listener
+    },
+  }).on('data', (data: Uint8Array, from) => {
+    console.debug(
+      `Incoming Data from ${toB32(from)}: ${new TextDecoder().decode(data)}`,
+    );
   });
 
-    
   // send 100 messages via UDP, every 500ms a message
   // IMPORTANT: UDP is not reliable. Some messages might get lost.
   const msg: string = 'Hello World';
   await new Promise((resolve) => {
     let t = 0;
     const i = setInterval(() => {
-      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`));
+      peerA.send(peerB.getPublicKey(), new TextEncoder().encode(`${t} ${msg}`));
       if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
@@ -171,30 +185,30 @@ for raw datagrams: broadcasting of data. Raw datagrams are lean.
 
 Send raw UDP messages from peer **A** to peer **B** through the I2P network:
 
-```
+```typescript
 import { createRaw } from '@i2p/sam';
 
 (async () => {
   // instantiate Peer A
   const peerA = await createRaw({
     sam: {
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
-    }
-  }); 
-  
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
+    },
+  });
+
   // instantiate Peer B
   const peerB = await createRaw({
     sam: {
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
     },
-    listen: { 
-      address: '127.0.0.1',  // udp listener
-      port: 20202            // udp listener
-    }
-  }).on('data', (data: Buffer) => {
-    console.log('Incoming Data: ' + data.toString());
+    listen: {
+      address: '127.0.0.1', // udp listener
+      port: 20202, // udp listener
+    },
+  }).on('data', (data: Uint8Array) => {
+    console.log('Incoming Data: ' + new TextDecoder().decode(data));
   });
 
   // send 100 messages via UDP, every 500ms a message
@@ -203,7 +217,7 @@ import { createRaw } from '@i2p/sam';
   await new Promise((resolve) => {
     let t = 0;
     const i = setInterval(() => {
-      peerA.send(peerB.getPublicKey(), Buffer.from(`${t} ${msg}`));
+      peerA.send(peerB.getPublicKey(), new TextEncoder().encode(`${t} ${msg}`));
       if (t++ >= 100) {
         clearInterval(i);
         resolve(true);
@@ -221,71 +235,78 @@ Get the public key of the local destination.
 
 Example:
 
-```
+```typescript
 import { createDatagram } from '@i2p/sam';
 
 createDatagram({
   sam: {
-    host: '127.0.0.1',  // your local I2P SAM host
-    portTCP: 7656       // your local I2P SAM port
-  }
+    host: '127.0.0.1', // your local I2P SAM host
+    portTCP: 7656, // your local I2P SAM port
+  },
 }).then((sam) => console.log(sam.getPublicKey()));
 ```
 
-### getPrivateKey(): string
+### getPrivateKey(): SecureBuffer | null
 
-Get the private key of the local destination.
+Get the private key of the local destination as a memory-safe buffer.
 
 Example:
 
-```
+```typescript
 import { createDatagram } from '@i2p/sam';
 
 createDatagram({
   sam: {
-    host: '127.0.0.1',  // your local I2P SAM host
-    portTCP: 7656       // your local I2P SAM port
-  }
-}).then((sam) => console.log(sam.getPrivateKey()));
+    host: '127.0.0.1', // your local I2P SAM host
+    portTCP: 7656, // your local I2P SAM port
+  },
+}).then((sam) => {
+  const privKeyBuffer = sam.getPrivateKey();
+  console.log('Private key loaded securely into RAM.');
+});
 ```
 
-### getKeyPair(): { public: string, private: string }
+### getKeyPair(): { public: string, private: SecureBuffer | null }
 
 Get the public and private key of the local destination.
 
 Example:
 
-```
+```typescript
 import { createStream } from '@i2p/sam';
 
 createStream({
   sam: {
-    host: '127.0.0.1',  // your local I2P SAM host
-    portTCP: 7656       // your local I2P SAM port
+    host: '127.0.0.1', // your local I2P SAM host
+    portTCP: 7656, // your local I2P SAM port
   },
   stream: {
-    destination: 'diva.i2p'
+    destination: 'diva.i2p',
   },
-}).then((sam) => console.log(sam.getKeyPair()));
+}).then((sam) => {
+  const keys = sam.getKeyPair();
+  console.log(`Public Key: ${keys.public}`);
+  console.log('Private Key loaded securely.');
+});
 ```
 
 ### close()
 
-Close a SAM connection.
+Close a SAM connection and securely erase private keys from memory.
 
 Example:
 
-```
+```typescript
 import { createRaw } from '@i2p/sam';
 
 (async () => {
   const sam = await createRaw({
     sam: {
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
-    }
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
+    },
   });
-  
+
   sam.close();
 })();
 ```
@@ -297,27 +318,27 @@ string).
 
 Example:
 
-```
+```typescript
 import { toB32 } from '@i2p/sam';
 
 console.log(toB32('[some base64-encoded destination]'));
 ```
 
-### createLocalDestination(c: Configuration): Promise\<{ address: string, public: string, private: string }\>
+### createLocalDestination(c: Configuration): Promise\<{ address: string, public: string, private: SecureBuffer | null }\>
 
 Create a new local destination and return its properties.
 
 Example:
 
-```
+```typescript
 import { createLocalDestination } from '@i2p/sam';
 
 createLocalDestination({
   sam: {
-    host: '127.0.0.1',  // your local I2P SAM host
-    portTCP: 7656       // your local I2P SAM port
-  }
-}).then((obj) => console.log(obj));
+    host: '127.0.0.1', // your local I2P SAM host
+    portTCP: 7656, // your local I2P SAM port
+  },
+}).then((obj) => console.log(`Address: ${obj.address}`));
 ```
 
 ### lookup(c: Configuration, name: string): Promise\<string\>
@@ -328,28 +349,30 @@ string.
 
 Example:
 
-```
+```typescript
 import { lookup } from '@i2p/sam';
 
 lookup({
   sam: {
-    host: '127.0.0.1',  // your local I2P SAM host
-    portTCP: 7656       // your local I2P SAM port
-  }
+    host: '127.0.0.1', // your local I2P SAM host
+    portTCP: 7656, // your local I2P SAM port
+  },
 }, 'diva.i2p').then((dest) => console.log(dest));
 ```
 
-### stream(msg: Buffer)
+### stream(msg: Uint8Array)
 
 Example: see the _Get Started: How to Use Streams_ above.
 
-### send(destination: string, msg: Buffer)
+### send(destination: string, msg: Uint8Array)
 
 Example: see _Get Started: How to Use Datagrams_ above.
 
 ### Configuration and its Defaults
 
-```
+```typescript
+import { SecureBuffer } from 'sodium-native';
+
 type tSession = {
   id?: string;
   options?: string;
@@ -379,7 +402,7 @@ type tSam = {
   versionMin?: string;
   versionMax?: string;
   publicKey?: string;
-  privateKey?: string;
+  privateKey?: SecureBuffer | null;
   timeout?: number;
 };
 
@@ -425,7 +448,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
     versionMin: '',
     versionMax: '',
     publicKey: '',
-    privateKey: '',
+    privateKey: null,
     timeout: 300,
   },
 };
@@ -441,15 +464,15 @@ Incoming data.
 
 Generic Error event - emitted if sockets report errors.
 
-```
+```typescript
 import { createRaw } from '@i2p/sam';
 
 (async () => {
   const sam = await createRaw({
     sam: {
-      host: '127.0.0.1',  // your local I2P SAM host
-      portTCP: 7656       // your local I2P SAM port
-    }
+      host: '127.0.0.1', // your local I2P SAM host
+      portTCP: 7656, // your local I2P SAM port
+    },
   });
   sam.on('error', (error) => console.debug(error));
 })();
@@ -467,8 +490,8 @@ Assumptions:
 2. docker and docker-compose is available.
 
 Clone the source code from git
-`git clone https://github.com/diva-exchange/i2p-sam.git` and enter the folder
-`i2p-sam`.
+`git clone [https://github.com/diva-exchange/i2p-sam.git](https://github.com/diva-exchange/i2p-sam.git)`
+and enter the folder `i2p-sam`.
 
 Prepare the test environment by creating the docker container:
 
@@ -477,7 +500,7 @@ docker compose -f test/sam.diva.i2p.yml up -d
 ```
 
 Check whether the I2P test node is properly running by accessing the local
-console on: http://172.19.74.11:7070.
+console on: [http://172.19.74.11:7070](http://172.19.74.11:7070).
 
 To modify the IP address of the local console, adapt the file
 `test/sam.diva.i2p.yml`.
@@ -510,13 +533,14 @@ deno task lint
 
 Contributions are very welcome. This is the general workflow:
 
-1. Fork from https://github.com/diva-exchange/i2p-sam/
+1. Fork from
+   [https://github.com/diva-exchange/i2p-sam/](https://github.com/diva-exchange/i2p-sam/)
 2. Pull the forked project to your local developer environment
 3. Make your changes, test, commit and push them
 4. Create a new pull request on github.com
 
 It is strongly recommended to sign your commits:
-https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key
+[https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
 
 If you have questions, please just contact us (see below).
 
@@ -549,9 +573,10 @@ German).
 
 ## References
 
-SAM docs: https://geti2p.net/en/docs/api/samv3
+SAM docs:
+[https://geti2p.net/en/docs/api/samv3](https://geti2p.net/en/docs/api/samv3)
 
-I2Pd: https://i2pd.readthedocs.io/
+I2Pd: [https://i2pd.readthedocs.io/](https://i2pd.readthedocs.io/)
 
 ## License
 

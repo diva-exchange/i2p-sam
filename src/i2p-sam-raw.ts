@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,11 +116,15 @@ export class I2pSamRaw extends I2pSam {
   }
 
   public override close(): void {
-    if (Object.keys(this.socketControlUDP).length) {
-      this.socketControlUDP.close();
+    if (this.socketControlUDP) {
+      try {
+        this.socketControlUDP.close();
+      } catch (_e) { /* ignored */ }
     }
-    if (Object.keys(this.socketListen).length) {
-      this.socketListen.close();
+    if (this.socketListen) {
+      try {
+        this.socketListen.close();
+      } catch (_e) { /* ignored */ }
     }
     super.close();
   }

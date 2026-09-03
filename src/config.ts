@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { nanoid } from 'nanoid';
+import { encodeHex } from '@std/encoding/hex';
+import { SecureBuffer } from 'sodium-native';
 
 export const MIN_UDP_MESSAGE_LENGTH: number = 1; // SAM v3 specs
 export const MAX_UDP_MESSAGE_LENGTH: number = 16384; // SAM v3 specs says 32768, but that's too high, setting to 16K
@@ -52,7 +53,7 @@ type tSam = {
   versionMin?: string;
   versionMax?: string;
   publicKey?: string;
-  privateKey?: string;
+  privateKey?: SecureBuffer | null;
   timeout?: number;
 };
 
@@ -98,7 +99,7 @@ const DEFAULT_CONFIGURATION: ConfigurationDefault = {
     versionMin: '',
     versionMax: '',
     publicKey: '',
-    privateKey: '',
+    privateKey: null,
     timeout: 300,
   },
 };
@@ -112,7 +113,8 @@ export class Config {
 
   constructor(c: Configuration) {
     this.session = { ...DEFAULT_CONFIGURATION.session, ...(c.session || {}) };
-    this.session.id = this.session.id || nanoid(DEFAULT_LENGTH_SESSION);
+    this.session.id = this.session.id ||
+      encodeHex(crypto.getRandomValues(new Uint8Array(DEFAULT_LENGTH_SESSION)));
     this.stream = { ...DEFAULT_CONFIGURATION.stream, ...(c.stream || {}) };
     this.forward = { ...DEFAULT_CONFIGURATION.forward, ...(c.forward || {}) };
     this.forward.port = Number(this.forward.port) > 0

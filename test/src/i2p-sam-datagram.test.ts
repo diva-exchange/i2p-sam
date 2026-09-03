@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import {
 } from '../../src/i2p-sam-datagram.ts';
 import { randomFillSync } from 'node:crypto';
 import { expect } from '@std/expect';
+import sodium, { SecureBuffer } from 'sodium-native';
 
 const SAM_HOST = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP = Number(Deno.env.get('SAM_PORT_TCP')) || 7656;
@@ -78,12 +79,12 @@ Deno.test('Datagram send', async (t: Deno.TestContext) => {
 
     let sentMsg: number = 0;
     await t.step('Start sending messages', async () => {
-      const intervalSender: number = setInterval(async (): Promise<void> => {
+      const intervalSender = setInterval(async (): Promise<void> => {
         i2pSender.send(destinationRecipient, dataToSend);
         sentMsg++;
       }, 50);
 
-      const intervalRecipient: number = setInterval(async (): Promise<void> => {
+      const intervalRecipient = setInterval(async (): Promise<void> => {
         i2pRecipient.send(destinationSender, dataToSend);
         sentMsg++;
       }, 50);
@@ -134,7 +135,10 @@ Deno.test('Datagram failTimeout', async () => {
 });
 
 Deno.test('Datagram failKeys', async () => {
-  let datagram: I2pSamDatagram = {} as I2pSamDatagram;
+  const dummyKey: SecureBuffer = sodium.sodium_malloc(2);
+  sodium.sodium_mlock(dummyKey);
+
+  let datagram: I2pSamDatagram | undefined;
   // public key / private key issues
   try {
     datagram = await createDatagram({
@@ -142,7 +146,7 @@ Deno.test('Datagram failKeys', async () => {
         host: SAM_HOST,
         portTCP: SAM_PORT_TCP,
         publicKey: '-',
-        privateKey: '--',
+        privateKey: sodium.sodium_malloc(1),
       },
     });
     // always false
@@ -151,6 +155,8 @@ Deno.test('Datagram failKeys', async () => {
     expect((error as Error).toString()).toContain('SESSION failed');
     expect((error as Error).toString()).toContain('RESULT=INVALID_KEY');
   } finally {
-    Object.keys(datagram).length && datagram.close();
+    if (datagram) datagram.close();
+    sodium.sodium_munlock(dummyKey);
+    sodium.sodium_memzero(dummyKey);
   }
 });

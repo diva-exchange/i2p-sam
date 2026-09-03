@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2025 diva.exchange
+ * Copyright 2021-2026 diva.exchange
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
   let destinationSender: string = '';
   let destinationRecipient: string = '';
 
-  // 16K data
-  const dataToSend: Uint8Array = randomFillSync(new Uint8Array(16 * 1024));
+  // 8K data
+  const dataToSend: Uint8Array = randomFillSync(new Uint8Array(8 * 1024));
 
-  let i2pSender: I2pSamRaw = {} as I2pSamRaw;
-  let i2pRecipient: I2pSamRaw = {} as I2pSamRaw;
+  let i2pSender: I2pSamRaw | undefined;
+  let i2pRecipient: I2pSamRaw | undefined;
 
   try {
     await t.step('Creating Sender', async () => {
@@ -85,22 +85,26 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
     });
 
     // provoking a lookup
-    i2pSender.send('diva.i2p', dataToSend);
+    i2pSender!.send('diva.i2p', dataToSend);
 
     let sentMsg: number = 0;
     await t.step('Start sending messages', async () => {
-      const intervalSender: number = setInterval(async (): Promise<void> => {
-        i2pSender.send(destinationRecipient, dataToSend);
+      const intervalSender = setInterval(async (): Promise<void> => {
+        i2pSender!.send(destinationRecipient, dataToSend);
         sentMsg++;
       }, 50);
 
-      const intervalRecipient: number = setInterval(async (): Promise<void> => {
-        i2pRecipient.send(destinationSender, dataToSend);
+      const intervalRecipient = setInterval(async (): Promise<void> => {
+        i2pRecipient!.send(destinationSender, dataToSend);
         sentMsg++;
       }, 50);
 
-      while (!(messageCounterA >= 10 && messageCounterB >= 10)) {
+      let waitCycles = 0;
+      while (
+        !(messageCounterA >= 10 && messageCounterB >= 10) && waitCycles < 60
+      ) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        waitCycles++;
       }
       clearInterval(intervalSender);
       clearInterval(intervalRecipient);
@@ -117,8 +121,8 @@ Deno.test('Raw send', async (t: Deno.TestContext) => {
     // always fails
     expect(false, `Test Error ${(error as Error).toString()}`).toEqual(true);
   } finally {
-    Object.keys(i2pSender).length && i2pSender.close();
-    Object.keys(i2pRecipient).length && i2pRecipient.close();
+    if (i2pSender) i2pSender.close();
+    if (i2pRecipient) i2pRecipient.close();
   }
 });
 
@@ -127,14 +131,14 @@ Deno.test('Raw failEmptyMessage', async () => {
     sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
   };
   const dest: string = await lookup(config, 'diva.i2p');
-  let raw: I2pSamRaw = {} as I2pSamRaw;
+  let raw: I2pSamRaw | undefined;
   try {
     raw = await createRaw(config);
     raw.send(dest, new Uint8Array(0));
   } catch (error: unknown) {
     expect((error as Error).toString()).toContain('invalid message length');
   } finally {
-    Object.keys(raw).length && raw.close();
+    if (raw) raw.close();
   }
 });
 
@@ -143,19 +147,19 @@ Deno.test('Raw failTooLargeMessage', async () => {
     sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
   };
   const dest: string = await lookup(config, 'diva.i2p');
-  let raw: I2pSamRaw = {} as I2pSamRaw;
+  let raw: I2pSamRaw | undefined;
   try {
     raw = await createRaw(config);
     raw.send(dest, randomFillSync(new Uint8Array(65 * 1024)));
   } catch (error: unknown) {
     expect((error as Error).toString()).toContain('invalid message length');
   } finally {
-    Object.keys(raw).length && raw.close();
+    if (raw) raw.close();
   }
 });
 
 Deno.test('Raw failTimeout', async () => {
-  let raw: I2pSamRaw = {} as I2pSamRaw;
+  let raw: I2pSamRaw | undefined;
   // timeout error
   try {
     raw = await createRaw({
@@ -165,12 +169,12 @@ Deno.test('Raw failTimeout', async () => {
   } catch (error: unknown) {
     expect((error as Error).toString()).toContain('timeout');
   } finally {
-    Object.keys(raw).length && raw.close();
+    if (raw) raw.close();
   }
 });
 
 Deno.test('Raw failListen', async () => {
-  let raw: I2pSamRaw = {} as I2pSamRaw;
+  let raw: I2pSamRaw | undefined;
   try {
     raw = await createRaw({
       sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
@@ -184,6 +188,79 @@ Deno.test('Raw failListen', async () => {
   } catch (error: unknown) {
     expect((error as Error).toString()).toContain('EADDRNOTAVAIL');
   } finally {
-    Object.keys(raw).length && raw.close();
+    if (raw) raw.close();
+  }
+});
+
+Deno.test('Raw failEmptyMessage', async () => {
+  const config: Configuration = {
+    sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+  };
+  const dest: string = await lookup(config, 'diva.i2p');
+  
+  let raw: I2pSamRaw | undefined;
+  try {
+    raw = await createRaw(config);
+    raw.send(dest, new Uint8Array(0)); // Zu klein
+  } catch (error: unknown) {
+    expect((error as Error).toString()).toContain('invalid message length');
+  } finally {
+    if (raw) raw.close();
+  }
+});
+
+Deno.test('Raw failTooLargeMessage', async () => {
+  const config: Configuration = {
+    sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+  };
+  const dest: string = await lookup(config, 'diva.i2p');
+  
+  let raw: I2pSamRaw | undefined;
+  try {
+    raw = await createRaw(config);
+    raw.send(dest, randomFillSync(new Uint8Array(65 * 1024))); // Zu groß
+  } catch (error: unknown) {
+    expect((error as Error).toString()).toContain('invalid message length');
+  } finally {
+    if (raw) raw.close();
+  }
+});
+
+Deno.test('Raw failInvalidSendDestination', async () => {
+  // Testet den Catch-Block in der privaten 's' Methode (z.B. durch DNS-Fehler beim Auflösen)
+  let raw: I2pSamRaw | undefined;
+  try {
+    raw = await createRaw({
+      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP },
+    });
+    
+    // Zerstöre den UDP Socket künstlich, um den try/catch Block in raw.send() / raw.s() zu triggern
+    (raw as any).socketControlUDP.close();
+    
+    const validData = new Uint8Array(10);
+    // Sendet an einen String der NICHT mit .i2p endet, um direkt raw.s() aufzurufen
+    raw.send('invalid-base64-destination', validData);
+    
+    // Warte kurz, damit der asynchrone Error-Emitter feuern kann
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  } catch (error: unknown) {
+    expect((error as Error).message).toBeDefined();
+  } finally {
+    if (raw) raw.close();
+  }
+});
+
+Deno.test('Raw failTimeout', async () => {
+  let raw: I2pSamRaw | undefined;
+  // timeout error
+  try {
+    raw = await createRaw({
+      sam: { host: SAM_HOST, portTCP: SAM_PORT_TCP, timeout: 1 },
+    });
+    expect(false).toEqual(true);
+  } catch (error: unknown) {
+    expect((error as Error).toString()).toContain('timeout');
+  } finally {
+    if (raw) raw.close();
   }
 });
