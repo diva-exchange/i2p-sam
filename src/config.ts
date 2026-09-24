@@ -17,7 +17,7 @@
  */
 
 import { encodeHex } from '@std/encoding/hex';
-import { SecureBuffer } from 'sodium-native';
+import type { SecureBuffer } from 'sodium-native';
 
 export const MIN_UDP_MESSAGE_LENGTH: number = 1; // SAM v3 specs
 export const MAX_UDP_MESSAGE_LENGTH: number = 16384; // SAM v3 specs says 32768, but that's too high, setting to 16K

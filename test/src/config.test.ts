@@ -16,7 +16,7 @@
  * Author/Maintainer: DIVA.EXCHANGE Association, https://diva.exchange
  */
 
-import { Config, Configuration } from '../../src/config.ts';
+import { Config, type Configuration } from '../../src/config.ts';
 import { expect } from '@std/expect';
 
 Deno.test('Configuration instantation', () => {

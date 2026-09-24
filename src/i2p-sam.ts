@@ -20,7 +20,7 @@ import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { Socket } from 'node:net';
 import { Config, type Configuration } from './config.ts';
-import sodium, { SecureBuffer } from 'sodium-native';
+import sodium, { type SecureBuffer } from 'sodium-native';
 import { encodeBase32 } from '@std/encoding/base32';
 import { indexOfNeedle } from '@std/bytes';
 

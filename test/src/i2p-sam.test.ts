@@ -20,7 +20,7 @@ import { type Configuration } from '../../src/config.ts';
 import { createLocalDestination, lookup, toB32 } from '../../src/i2p-sam.ts';
 import { createRaw, type I2pSamRaw } from '../../src/i2p-sam-raw.ts';
 import { expect } from '@std/expect';
-import sodium, { SecureBuffer } from 'sodium-native';
+import sodium, { type SecureBuffer } from 'sodium-native';
 
 const SAM_HOST: string = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP: number = Number(Deno.env.get('SAM_PORT_TCP') || 7656);

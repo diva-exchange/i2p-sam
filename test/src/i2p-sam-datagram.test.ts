@@ -23,7 +23,7 @@ import {
 } from '../../src/i2p-sam-datagram.ts';
 import { randomFillSync } from 'node:crypto';
 import { expect } from '@std/expect';
-import sodium, { SecureBuffer } from 'sodium-native';
+import sodium, { type SecureBuffer } from 'sodium-native';
 
 const SAM_HOST = Deno.env.get('SAM_HOST') || '172.19.74.11';
 const SAM_PORT_TCP = Number(Deno.env.get('SAM_PORT_TCP')) || 7656;
